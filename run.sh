@@ -32,10 +32,6 @@ if ! command -v luajit >/dev/null 2>&1; then
 fi
 
 [ -x ./backend ] || ./build.sh
-source "$PWD/entorno/bin/activate"
+# source "$PWD/entorno/bin/activate"
 
 ./runclient program.main.lua
-./backend daemons
-./runclient merge.lua
-rm -rf daemons/
-python el_de_los_mandados.py

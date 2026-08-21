@@ -1,8 +1,10 @@
 #include "cjob.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <time.h>
+#include <unistd.h>
+
+static int in_scheduler = 0;
 
 static double get_time_sec(void) {
     struct timespec ts;
@@ -10,100 +12,133 @@ static double get_time_sec(void) {
     return ts.tv_sec + (ts.tv_nsec / 1e9);
 }
 
-// Hook seguro (no hace yield interno de C, evita el crash de LuaJIT)
-void cjob_instruction_hook(lua_State *L, lua_Debug *ar) {
-    (void)L;
-    (void)ar;
+void enqueue_job(Job *j) {
+    if (!j) return;
+    j->next = NULL;
+    if (!job_tail) {
+        job_head = job_tail = j;
+    } else {
+        job_tail->next = j;
+        job_tail = j;
+    }
 }
 
-void *cjob_worker_loop(void *arg) {
-    lua_State *main_L = (lua_State *)arg;
-    printf("[DEBUG Worker] Hilo de trabajo iniciado correctamente.\n");
+Job* dequeue_job(void) {
+    if (!job_head) return NULL;
+    Job *j = job_head;
+    job_head = job_head->next;
+    if (!job_head) job_tail = NULL;
+    j->next = NULL;
+    return j;
+}
 
-    while (worker_running) {
-        pthread_mutex_lock(&cjob_mutex);
-        
-        while (job_head == NULL && worker_running) {
-            pthread_cond_wait(&cjob_cond, &cjob_mutex);
-        }
+void process_jobs(lua_State *L) {
+    (void)L;
+    if (!job_head || in_scheduler) return;
 
-        if (!worker_running) {
-            pthread_mutex_unlock(&cjob_mutex);
-            break;
-        }
+    in_scheduler = 1;
 
-        Job *j = dequeue_job();
-        pthread_mutex_unlock(&cjob_mutex);
-
-        if (!j) continue;
-
-        pthread_mutex_lock(&cjob_mutex);
-        int current_status = j->status;
-        double wake_at = j->wake_at;
-        pthread_mutex_unlock(&cjob_mutex);
-
-        if (current_status != JOB_RUNNING) {
-            if (current_status == JOB_DEAD) {
-                pthread_mutex_lock(&cjob_mutex);
-                if (j->co_ref != LUA_NOREF && main_L != NULL) {
-                    luaL_unref(main_L, LUA_REGISTRYINDEX, j->co_ref);
-                    j->co_ref = LUA_NOREF;
-                }
-                free(j);
-                pthread_mutex_unlock(&cjob_mutex);
-            }
-            continue;
-        }
-
+    while (job_head) {
+        Job *prev = NULL;
+        Job *curr = job_head;
         double now = get_time_sec();
-        if (now < wake_at) {
-            // Aún debe esperar: re-encolar y pausar microsegundos
-            pthread_mutex_lock(&cjob_mutex);
-            enqueue_job(j);
-            pthread_mutex_unlock(&cjob_mutex);
-            usleep(500); 
-            continue;
+        int active_jobs = 0;
+
+        while (curr) {
+            Job *next = curr->next;
+
+            if (curr->status == JOB_RUNNING) {
+                if (now >= curr->wake_at) {
+                    // Desencolar
+                    if (prev) prev->next = next;
+                    else job_head = next;
+                    if (curr == job_tail) job_tail = prev;
+
+                    // Reanudar corrutina en su propia pila limpia
+                    int status = lua_resume(curr->co, 0);
+
+                    if (status == LUA_YIELD) {
+                        double delay = 0.0;
+                        int top = lua_gettop(curr->co);
+                        if (top > 0 && lua_isnumber(curr->co, top)) {
+                            delay = lua_tonumber(curr->co, top);
+                        }
+                        curr->wake_at = get_time_sec() + delay;
+                        enqueue_job(curr);
+                    } else {
+                        if (status != LUA_OK) {
+                            const char *err = lua_tostring(curr->co, -1);
+                            fprintf(stderr, "[CJob Error]: %s\n", err ? err : "desconocido");
+                        }
+                        curr->status = JOB_DEAD;
+                        if (curr->co_ref != LUA_NOREF) {
+                            luaL_unref(curr->co, LUA_REGISTRYINDEX, curr->co_ref);
+                            curr->co_ref = LUA_NOREF;
+                        }
+                    }
+                    active_jobs++;
+                    break; // Re-evaluar la lista tras el yield
+                } else {
+                    active_jobs++;
+                    prev = curr;
+                }
+            } else {
+                prev = curr;
+            }
+            curr = next;
         }
 
-        // Ejecución segura de la corrutina
-        // En LuaJIT/Lua 5.1, lua_resume recibe la corrutina y el número de args (0 al reanudar)
-        int status = lua_resume(j->co, 0);
+        if (active_jobs == 0) break;
+        
+        // Ceder un milisegundo a la CPU si hay tareas dormidas esperando tiempo
+        usleep(1000);
+    }
 
-        if (status == LUA_YIELD) {
-            double delay = 0.0;
-            if (lua_gettop(j->co) > 0 && lua_isnumber(j->co, -1)) {
-                delay = lua_tonumber(j->co, -1);
+    in_scheduler = 0;
+}
+
+int l_cjob_wait(lua_State *L) {
+    double seconds = luaL_optnumber(L, 1, 0.0);
+    process_jobs(L);
+    lua_settop(L, 0);
+    lua_pushnumber(L, seconds);
+    return lua_yield(L, 1);
+}
+
+int l_cjob_async(lua_State *L) {
+    (void)L;
+
+    while (job_head != NULL) {
+        Job *curr = dequeue_job(); // Tomar el primer job
+        if (!curr) break;
+
+        if (curr->status == JOB_RUNNING) {
+            // Ejecuta EXACTAMENTE 1 OpCode antes de caer en el lua_yield del hook
+            int status = lua_resume(curr->co, 0);
+
+            if (status == LUA_YIELD) {
+                // El subproceso cedió el turno por el OpCode hook.
+                // Lo volvemos a encolar al final para la siguiente instrucción.
+                enqueue_job(curr);
+            } else {
+                // El subproceso finalizó (LUA_OK) o dio error
+                if (status != LUA_OK) {
+                    const char *err = lua_tostring(curr->co, -1);
+                    fprintf(stderr, "[CJob OpCode Error]: %s\n", err ? err : "desconocido");
+                }
+                curr->status = JOB_DEAD;
+                if (curr->co_ref != LUA_NOREF) {
+                    luaL_unref(curr->co, LUA_REGISTRYINDEX, curr->co_ref);
+                    curr->co_ref = LUA_NOREF;
+                }
+                free(curr);
             }
-
-            pthread_mutex_lock(&cjob_mutex);
-            j->wake_at = get_time_sec() + delay;
-            enqueue_job(j);
-            pthread_mutex_unlock(&cjob_mutex);
-
-        } else if (status == LUA_OK) {
-            pthread_mutex_lock(&cjob_mutex);
-            j->status = JOB_DEAD;
-            if (j->co_ref != LUA_NOREF && main_L != NULL) {
-                luaL_unref(main_L, LUA_REGISTRYINDEX, j->co_ref);
-                j->co_ref = LUA_NOREF;
-            }
-            free(j);
-            pthread_mutex_unlock(&cjob_mutex);
-
-        } else {
-            // Manejo de errores de tiempo de ejecución
-            const char *err = lua_tostring(j->co, -1);
-            fprintf(stderr, "[ERROR Worker] Error en Job (%p): %s\n", (void*)j, err ? err : "error desconocido");
-
-            pthread_mutex_lock(&cjob_mutex);
-            j->status = JOB_DEAD;
-            if (j->co_ref != LUA_NOREF && main_L != NULL) {
-                luaL_unref(main_L, LUA_REGISTRYINDEX, j->co_ref);
-                j->co_ref = LUA_NOREF;
-            }
-            free(j);
-            pthread_mutex_unlock(&cjob_mutex);
         }
     }
-    return NULL;
+    return 0;
+}
+// Sentinel que corre AL FINAL del script principal, pero fuera de las instrucciones de la VM
+int l_sentinel_gc(lua_State *L) {
+    process_jobs(L);
+    return 0;
 }
