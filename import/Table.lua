@@ -90,7 +90,7 @@ local ReplaceKeymap = {
 	["\\"] = "\\"
 }
 
-_Settings.NO_HIGHLIGHT           = false
+_Settings.NO_HIGHLIGHT          = false
 _Settings.TAB_SIZE              = 4
 _Settings.TAB_FORMAT            = string_rep(" ", _Settings.TAB_SIZE)
 _Settings.PAGE_LIMIT            = 0 -- change this if you have trouble with some circular definitions. . .
@@ -131,13 +131,13 @@ else
 	_Settings.BOOLEAN_COLOR         = ""
 	_Settings.THREAD_COLOR          = ""
 
-	ReplaceKeymap["\""] = "\""
-	ReplaceKeymap["\'"] = "\'"
+	ReplaceKeymap["\""]  = "\""
+	ReplaceKeymap["\'"]  = "\'"
 	ReplaceKeymap["\32"] = "\32"
-	ReplaceKeymap["\t"] = "\t"
-	ReplaceKeymap["\\"] = "\\"
-	ReplaceKeymap["\r"] = "\r"
-	ReplaceKeymap["\n"] = "\n"
+	ReplaceKeymap["\t"]  = "\t"
+	ReplaceKeymap["\\"]  = "\\"
+	ReplaceKeymap["\r"]  = "\r"
+	ReplaceKeymap["\n"]  = "\n"
 end
 
 local DoTable, DoTableStream, methods, TableMT
