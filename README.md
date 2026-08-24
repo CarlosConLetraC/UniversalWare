@@ -100,8 +100,8 @@ UniversalWare/
 │   └── rand_config.json
 ├── import/                   # Módulos, librerías y bins binarios para Lua
 │   ├── base64.lua / bit32.lua
-│   ├── Chat.lua / Color3.lua / File.lua / Math.lua / String.lua / Table.lua
-│   ├── csv.lua / json.lua / ctx.lua / system.lua / task.lua
+│   ├── Color3.lua / File.lua / Math.lua / String.lua / Table.lua
+│   ├── json.lua / system.lua
 │   ├── Lista.lua / Nodo.lua
 │   ├── EasingModes.lua / Enum/ (EaseMode, Faces, FaceType, Shape, StyleMode)
 │   ├── sublibs/               # Tipos vectoriales secundarios (Color3, Vector2, Vector3)
