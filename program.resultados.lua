@@ -1,7 +1,13 @@
 import("cmariadb", "system")
 
 -- 1. Conexión a la base de datos existente
-local db, err = cmariadb.connect("localhost", "root", "12345", "dark_kitchen_db", 3306)
+-- local db, err = cmariadb.connect("localhost", "root", "12345", "dark_kitchen_db", 3306)
+local db, err = cmariadb.connect({
+    host = "127.0.0.1",
+    user = "lua_client",
+    password = "12345",
+    db = "dark_kitchen_db"
+})
 if not db then
     error("[ERROR] No se pudo conectar a MariaDB: " .. tostring(err))
 end

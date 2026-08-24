@@ -1,7 +1,13 @@
 import("cmariadb", "system")
 
 -- 1. Conexión a MariaDB activando MULTIPLE_STATEMENTS para scripts DDL
-local db, err = cmariadb.connect("localhost", "root", "12345", nil, 3306, cmariadb.CLIENT_MODE.MULTIPLE_STATEMENTS)
+-- local db, err = cmariadb.connect("localhost", "lua_client", "12345", nil, 3306, cmariadb.CLIENT_MODE.MULTIPLE_STATEMENTS, "/tmp/mysql.sock")
+local db, err = cmariadb.connect({
+    host = "127.0.0.1",
+    user = "lua_client",
+    password = "12345",
+    client_mode = cmariadb.CLIENT_MODE.MULTIPLE_STATEMENTS
+})
 if not db then
     error("[ERROR] No se pudo conectar a MariaDB: " .. tostring(err))
 end

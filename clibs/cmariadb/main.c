@@ -157,34 +157,100 @@ void push_mariadb_field(lua_State *L, MYSQL_FIELD *field, char *val, unsigned lo
     }
 }
 
-// 1. mariadb.connect("host", "user", "pass", "db" [opcional], "port" [default: 3306], "client_mode" [opcional])
+// [ANTES] Firma: mariadb.connect("host", "user", "pass", "db" [opt], "port" [opt: 3306], "client_mode" [opt], "socket" [opt])
+// Firma 1: mariadb.connect("host", "user", "pass", "db" [opt], "port" [opt], "client_mode" [opt], "socket" [opt])
+// Firma 2: mariadb.connect({ host = "...", user = "...", password = "...", db = "...", port = 3306, client_mode = ..., socket = "..." })
 static int l_connect(lua_State *L) {
-    const char *host = luaL_checkstring(L, 1);
-    const char *user = luaL_checkstring(L, 2);
-    const char *pass = luaL_checkstring(L, 3);
-    const char *db   = luaL_optstring(L, 4, NULL); 
-    int port         = (int)luaL_optinteger(L, 5, 3306);
-
-    if (db && strlen(db) == 0) db = NULL;
-
-    // Por defecto inicia en 128[cite: 1]
+    const char *host = NULL,
+               *user = NULL,
+               *pass = NULL,
+               *db   = NULL;
+    int port         = 3306;
     unsigned long client_flags = MARIADB_CLIENT_DEFAULT_MODE;
+    const char *socket_path = NULL;
 
-    if (lua_gettop(L) >= 6 && !lua_isnil(L, 6)) {
-        int custom_mode = (int)luaL_checkinteger(L, 6);
+    // --- MODO 1: Parámetro de tipo Tabla ---
+    if (lua_istable(L, 1)) {
+        // 1. host
+        lua_getfield(L, 1, "host");
+        if (lua_isstring(L, -1)) host = lua_tostring(L, -1);
+        lua_pop(L, 1);
 
-        // Validar que coincida exactamente con alguna de las dos opciones permitidas[cite: 1]
-        switch (custom_mode) {
-            case MARIADB_CLIENT_DEFAULT_MODE:
-            case MARIADB_CLIENT_MULTI_STATEMENTS:
-                break;
-            default:
-                return luaL_error(L, "client_mode no permitido: %d", custom_mode);
+        // 2. user
+        lua_getfield(L, 1, "user");
+        if (lua_isstring(L, -1)) user = lua_tostring(L, -1);
+        lua_pop(L, 1);
+
+        // 3. password (soporta 'password' o 'pass')
+        lua_getfield(L, 1, "password");
+        if (!lua_isstring(L, -1)) {
+            lua_pop(L, 1);
+            lua_getfield(L, 1, "pass");
+        }
+        if (lua_isstring(L, -1)) pass = lua_tostring(L, -1);
+        lua_pop(L, 1);
+
+        // Validar campos obligatorios en tabla
+        if (!host || !user || !pass) {
+            return luaL_error(L, "La tabla de conexión requiere las claves 'host', 'user' y 'password'");
         }
 
-        client_flags = (unsigned long)custom_mode;
+        // 4. db (opcional)
+        lua_getfield(L, 1, "db");
+        if (lua_isstring(L, -1)) db = lua_tostring(L, -1);
+        lua_pop(L, 1);
+
+        // 5. port (opcional, default 3306)
+        lua_getfield(L, 1, "port");
+        if (lua_isnumber(L, -1)) port = (int)lua_tointeger(L, -1);
+        lua_pop(L, 1);
+
+        // 6. client_mode (opcional)
+        lua_getfield(L, 1, "client_mode");
+        if (lua_isnumber(L, -1)) {
+            int custom_mode = (int)lua_tointeger(L, -1);
+            if (custom_mode == MARIADB_CLIENT_DEFAULT_MODE || custom_mode == MARIADB_CLIENT_MULTI_STATEMENTS) {
+                client_flags = (unsigned long)custom_mode;
+            } else {
+                lua_pop(L, 1);
+                return luaL_error(L, "client_mode no permitido: %d", custom_mode);
+            }
+        }
+        lua_pop(L, 1);
+
+        // 7. socket (opcional)
+        lua_getfield(L, 1, "socket");
+        if (lua_isstring(L, -1)) socket_path = lua_tostring(L, -1);
+        lua_pop(L, 1);
+
+    // --- MODO 2: Parámetros Posicionales Tradicionales ---
+    } else {
+        host = luaL_checkstring(L, 1);
+        user = luaL_checkstring(L, 2);
+        pass = luaL_checkstring(L, 3);
+        db   = luaL_optstring(L, 4, NULL);
+        port = (int)luaL_optinteger(L, 5, 3306);
+
+        if (lua_gettop(L) >= 6 && !lua_isnil(L, 6)) {
+            int custom_mode = (int)luaL_checkinteger(L, 6);
+            switch (custom_mode) {
+                case MARIADB_CLIENT_DEFAULT_MODE:
+                case MARIADB_CLIENT_MULTI_STATEMENTS:
+                    break;
+                default:
+                    return luaL_error(L, "client_mode no permitido: %d", custom_mode);
+            }
+            client_flags = (unsigned long)custom_mode;
+        }
+
+        socket_path = luaL_optstring(L, 7, NULL);
     }
 
+    // Limpieza de cadenas vacías
+    if (db && strlen(db) == 0) db = NULL;
+    if (socket_path && strlen(socket_path) == 0) socket_path = NULL;
+
+    // --- Conexión con MariaDB ---
     MYSQL *conn = mysql_init(NULL);
     if (!conn) {
         lua_pushnil(L);
@@ -192,8 +258,9 @@ static int l_connect(lua_State *L) {
         return 2;
     }
 
-    // Pasa mariadb-flag de forma transparente a MariaDB[cite: 1]
-    if (!mysql_real_connect(conn, host, user, pass, db, port, NULL, client_flags)) {
+    mysql_options(conn, MYSQL_READ_DEFAULT_GROUP, "client");
+
+    if (!mysql_real_connect(conn, host, user, pass, db, port, socket_path, client_flags)) {
         lua_pushnil(L);
         lua_pushstring(L, mysql_error(conn));
         mysql_close(conn);
