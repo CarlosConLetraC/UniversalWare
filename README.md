@@ -213,6 +213,7 @@ podmanrun universalware-env
 
 Una vez dentro del contenedor:
 ```bash
+cd RUTA_DE_UNIVERSAL_WARE
 ./run.sh
 ```
 
