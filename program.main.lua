@@ -188,7 +188,6 @@ for i = 1, 15, 1 do
     table.insert(detalle_vals, string.format("(%d, %d, %d, %s)", i, prod_id, cant, p_unit))
 end
 
--- Ensamblar script DML final
 -- Ensamblar script DML final con control de FKs
 local dml_inserts = string.format([[
     SET FOREIGN_KEY_CHECKS = 0;

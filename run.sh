@@ -35,3 +35,4 @@ fi
 # source "$PWD/entorno/bin/activate"
 
 ./runclient program.main.lua
+./runclient program.resultados.lua
