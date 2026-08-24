@@ -226,8 +226,6 @@ cd RUTA_DE_UNIVERSAL_WARE
 
 ---
 
----
-
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia **MIT** (o la especificada en el archivo [LICENCE](LICENCE)).
