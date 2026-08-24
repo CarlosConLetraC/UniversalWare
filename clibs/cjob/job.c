@@ -20,9 +20,8 @@ static void cjob_line_hook(lua_State *L, lua_Debug *ar) {
 int l_cjob_new(lua_State *L) {
     int top = lua_gettop(L);
 
-    if (top < 1 || !lua_isfunction(L, 1)) {
+    if (top < 1 || !lua_isfunction(L, 1))
         return luaL_error(L, "Se esperaba una funcion como primer argumento");
-    }
 
     int nargs = top - 1; // Cantidad de parámetros pasados a la función
 
@@ -30,9 +29,7 @@ int l_cjob_new(lua_State *L) {
     int co_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
     // Copiar y mover la función (índice 1) + todos sus argumentos (2..top) a 'co'
-    for (int i = 1; i <= top; i++) {
-        lua_pushvalue(L, i);
-    }
+    for (int i = 1; i <= top; i++) lua_pushvalue(L, i);
     lua_xmove(L, co, top);
 
     Job *j = (Job *)malloc(sizeof(Job));
@@ -71,9 +68,8 @@ int l_job_kill(lua_State *L) {
 
 int l_job_stop(lua_State *L) {
     JobHandle *h = (JobHandle *)luaL_checkudata(L, 1, CJOB_MT);
-    if (h && h->job && h->job->status == JOB_RUNNING) {
+    if (h && h->job && h->job->status == JOB_RUNNING)
         h->job->status = JOB_SUSPENDED;
-    }
     return 0;
 }
 
@@ -92,13 +88,12 @@ int l_job_index(lua_State *L) {
     const char *key = luaL_checkstring(L, 2);
 
     if (strcmp(key, "status") == 0) {
-        if (!h->job || h->job->status == JOB_DEAD) {
+        if (!h->job || h->job->status == JOB_DEAD)
             lua_pushstring(L, "dead");
-        } else if (h->job->status == JOB_SUSPENDED) {
+        else if (h->job->status == JOB_SUSPENDED)
             lua_pushstring(L, "suspended");
-        } else {
+        else
             lua_pushstring(L, "running");
-        }
         return 1;
     }
 
@@ -133,11 +128,10 @@ int l_job_tostring(lua_State *L) {
     }
 
     const char *status_str = "running";
-    if (h->job->status == JOB_SUSPENDED) {
+    if (h->job->status == JOB_SUSPENDED)
         status_str = "suspended";
-    } else if (h->job->status == JOB_DEAD) {
+    else if (h->job->status == JOB_DEAD)
         status_str = "dead";
-    }
 
     lua_pushfstring(L, "<job[%s]: %p>", status_str, (void *)h->job);
     return 1;
