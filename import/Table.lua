@@ -29,6 +29,7 @@ end
 local math_floor            = math.floor
 local math_huge             = math.huge
 local math_random			= math.random
+local math_randomseed       = math.randomseed
 
 local string_len            = string.len
 local string_rep            = string.rep
@@ -493,10 +494,10 @@ DoTable = function(t, _seen)
 end
 
 ConvertStream["number"] = function(val, seen, depth, page, nohighlight, DoMethod, file)
-    if val == math.huge then
+    if val == math_huge then
         file:write("math.huge")
         return
-    elseif val == -math.huge then
+    elseif val == -math_huge then
         file:write("-math.huge")
         return
     end
@@ -548,7 +549,7 @@ ConvertStream["table"] = function(val, seen, depth, page, nohighlight, DoMethod,
 
     file:write("{\n")
 
-    local indent = string.rep(_Settings.TAB_FORMAT, depth + 1)
+    local indent = string_rep(_Settings.TAB_FORMAT, depth + 1)
 
     for k, v in pairs(val) do
         file:write(indent)
@@ -569,7 +570,7 @@ ConvertStream["table"] = function(val, seen, depth, page, nohighlight, DoMethod,
         file:write(",\n")
     end
 
-    file:write(string.rep(_Settings.TAB_FORMAT, depth))
+    file:write(string_rep(_Settings.TAB_FORMAT, depth))
     file:write("}")
 end
 
@@ -694,10 +695,10 @@ methods = {
 	end,
 	shuffle = function(self)
 		local n = rawlen(self)
-		math.randomseed(os.time())
+		math_randomseed(os_time())
 
 		for i = n, 2, -1 do
-			local j = math.random(i)
+			local j = math_random(i)
 
 			local a = rawget(self, i)
 			local b = rawget(self, j)
