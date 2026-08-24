@@ -222,7 +222,7 @@ cd RUTA_DE_UNIVERSAL_WARE
 
 ## 🎥 Demostración del Sistema
 
-
+<img width="1280" height="800" alt="UniversalWare_Ejemplo1" src="https://github.com/user-attachments/assets/74b1c133-6e8d-46d4-8fbe-52ee821899e0" />
 
 ---
 
