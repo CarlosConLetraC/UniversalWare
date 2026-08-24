@@ -94,7 +94,7 @@ UniversalWare/
 ├── configurarentorno.sh      # Preparación de dependencias y venv
 ├── cpplibs/                  # Código fuente C++ de librerías dinámicas
 │   ├── cml.cpp               # Módulo C++ para Machine Learning
-│   └── csvfast.cpp           # Parser ultrarrápido de archivos CSV
+│   └── csvfast.cpp           # Parser optimizado de archivos CSV
 ├── data/                     # Archivos de configuración y semillas de datos JSON
 │   ├── guid_rand.json
 │   └── rand_config.json
