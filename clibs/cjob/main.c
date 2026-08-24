@@ -35,9 +35,6 @@ int luaopen_cjob(lua_State *L) {
     luaL_getmetatable(L, CJOB_SENTINEL_MT);
     lua_setmetatable(L, -2);
     lua_setfield(L, LUA_REGISTRYINDEX, "_CJOB_SENTINEL_");
-
-    // IMPORTANTE: Eliminamos completamente el lua_sethook
-
     luaL_register(L, "cjob", cjob_funcs);
     return 1;
 }
