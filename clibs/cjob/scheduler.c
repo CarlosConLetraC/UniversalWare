@@ -32,8 +32,55 @@ Job* dequeue_job(void) {
     return j;
 }
 
+// Recibe lua_State *L para poder lanzar luaL_error hacia el entorno principal
+static void step_job(lua_State *L, Job *j) {
+    int nargs_to_pass = 0;
+    if (j->nargs >= 0) {
+        nargs_to_pass = j->nargs;
+        j->nargs = -1; // Marcamos que los argumentos ya fueron consumidos
+    }
+
+    int status = lua_resume(j->co, nargs_to_pass);
+
+    if (status == LUA_YIELD) {
+        double delay = 0.0;
+        int top = lua_gettop(j->co);
+        
+        if (top > 0 && lua_isnumber(j->co, top))
+            delay = lua_tonumber(j->co, top);
+
+        j->wake_at = get_time_sec() + delay;
+        enqueue_job(j);
+    } else {
+        // En caso de error en la corrutina:
+        if (status != LUA_OK) {
+            // Extraer mensaje de error del stack de la corrutina
+            const char *err = lua_tostring(j->co, -1);
+            char err_buf[512];
+            snprintf(err_buf, sizeof(err_buf), "[CJob Error]: %s", err ? err : "desconocido");
+
+            // Limpieza del Job antes de interrumpir la ejecución
+            j->status = JOB_DEAD;
+            if (j->co_ref != LUA_NOREF) {
+                luaL_unref(j->co, LUA_REGISTRYINDEX, j->co_ref);
+                j->co_ref = LUA_NOREF;
+            }
+
+            // Elevar el error al lua_State principal
+            luaL_error(L, "%s", err_buf);
+            return;
+        }
+
+        // Finalización exitosa
+        j->status = JOB_DEAD;
+        if (j->co_ref != LUA_NOREF) {
+            luaL_unref(j->co, LUA_REGISTRYINDEX, j->co_ref);
+            j->co_ref = LUA_NOREF;
+        }
+    }
+}
+
 void process_jobs(lua_State *L) {
-    (void)L;
     if (!job_head || in_scheduler) return;
 
     in_scheduler = 1;
@@ -49,35 +96,15 @@ void process_jobs(lua_State *L) {
 
             if (curr->status == JOB_RUNNING) {
                 if (now >= curr->wake_at) {
-                    // Desencolar
                     if (prev) prev->next = next;
                     else job_head = next;
                     if (curr == job_tail) job_tail = prev;
 
-                    // Reanudar corrutina en su propia pila limpia
-                    int status = lua_resume(curr->co, 0);
+                    // Pasamos 'L' para que cualquier error detenga el scheduler y salte a Lua
+                    step_job(L, curr);
 
-                    if (status == LUA_YIELD) {
-                        double delay = 0.0;
-                        int top = lua_gettop(curr->co);
-                        if (top > 0 && lua_isnumber(curr->co, top)) {
-                            delay = lua_tonumber(curr->co, top);
-                        }
-                        curr->wake_at = get_time_sec() + delay;
-                        enqueue_job(curr);
-                    } else {
-                        if (status != LUA_OK) {
-                            const char *err = lua_tostring(curr->co, -1);
-                            fprintf(stderr, "[CJob Error]: %s\n", err ? err : "desconocido");
-                        }
-                        curr->status = JOB_DEAD;
-                        if (curr->co_ref != LUA_NOREF) {
-                            luaL_unref(curr->co, LUA_REGISTRYINDEX, curr->co_ref);
-                            curr->co_ref = LUA_NOREF;
-                        }
-                    }
                     active_jobs++;
-                    break; // Re-evaluar la lista tras el yield
+                    break;
                 } else {
                     active_jobs++;
                     prev = curr;
@@ -89,8 +116,6 @@ void process_jobs(lua_State *L) {
         }
 
         if (active_jobs == 0) break;
-        
-        // Ceder un milisegundo a la CPU si hay tareas dormidas esperando tiempo
         usleep(1000);
     }
 
@@ -106,38 +131,14 @@ int l_cjob_wait(lua_State *L) {
 }
 
 int l_cjob_async(lua_State *L) {
-    (void)L;
-
     while (job_head != NULL) {
-        Job *curr = dequeue_job(); // Tomar el primer job
+        Job *curr = dequeue_job();
         if (!curr) break;
-
-        if (curr->status == JOB_RUNNING) {
-            // Ejecuta EXACTAMENTE 1 OpCode antes de caer en el lua_yield del hook
-            int status = lua_resume(curr->co, 0);
-
-            if (status == LUA_YIELD) {
-                // El subproceso cedió el turno por el OpCode hook.
-                // Lo volvemos a encolar al final para la siguiente instrucción.
-                enqueue_job(curr);
-            } else {
-                // El subproceso finalizó (LUA_OK) o dio error
-                if (status != LUA_OK) {
-                    const char *err = lua_tostring(curr->co, -1);
-                    fprintf(stderr, "[CJob OpCode Error]: %s\n", err ? err : "desconocido");
-                }
-                curr->status = JOB_DEAD;
-                if (curr->co_ref != LUA_NOREF) {
-                    luaL_unref(curr->co, LUA_REGISTRYINDEX, curr->co_ref);
-                    curr->co_ref = LUA_NOREF;
-                }
-                free(curr);
-            }
-        }
+        if (curr->status == JOB_RUNNING)step_job(L, curr);
     }
     return 0;
 }
-// Sentinel que corre AL FINAL del script principal, pero fuera de las instrucciones de la VM
+
 int l_sentinel_gc(lua_State *L) {
     process_jobs(L);
     return 0;

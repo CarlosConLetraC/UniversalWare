@@ -18,25 +18,29 @@ static void cjob_line_hook(lua_State *L, lua_Debug *ar) {
 }
 
 int l_cjob_new(lua_State *L) {
-    lua_State *co = NULL;
-    int co_ref = LUA_NOREF;
+    int top = lua_gettop(L);
 
-    if (lua_isfunction(L, 1)) {
-        co = lua_newthread(L);
-        co_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-        lua_pushvalue(L, 1);
-        lua_xmove(L, co, 1);
-    } else {
-        return luaL_error(L, "Se esperaba una funcion");
+    if (top < 1 || !lua_isfunction(L, 1)) {
+        return luaL_error(L, "Se esperaba una funcion como primer argumento");
     }
 
-    // luaJIT_setmode(co, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_OFF);
+    int nargs = top - 1; // Cantidad de parámetros pasados a la función
+
+    lua_State *co = lua_newthread(L);
+    int co_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+    // Copiar y mover la función (índice 1) + todos sus argumentos (2..top) a 'co'
+    for (int i = 1; i <= top; i++) {
+        lua_pushvalue(L, i);
+    }
+    lua_xmove(L, co, top);
 
     Job *j = (Job *)malloc(sizeof(Job));
     j->co = co;
     j->co_ref = co_ref;
     j->status = JOB_RUNNING;
     j->wake_at = 0.0;
+    j->nargs = nargs; // Guardamos cuántos argumentos debe recibir en la primera ejecución
     j->next = NULL;
 
     // ACTIVAR HOOK: MASKCOUNT = 1 dispara el hook en CADA OpCode de Lua

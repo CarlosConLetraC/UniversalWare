@@ -20,6 +20,7 @@
         int co_ref;
         JobStatus status;
         double wake_at;
+        int nargs;
         struct Job *next;
     } Job;
 
