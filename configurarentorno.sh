@@ -123,89 +123,77 @@ OUT_DIR="$BASE_PATH/import/Linux"
 mkdir -p "$OUT_DIR"
 
 if [ ! -d "$CLIBS_DIR" ]; then
-	prettyprint 2 "No existe o no se pudo crear directorio clibs/"
-	exit 1
+    prettyprint 2 "No existe o no se pudo crear directorio clibs/"
+    exit 1
 fi
 
 # 1. Detección de cabeceras de MySQL/MariaDB en el sistema
 SQL_INC=""
 for header in $(find /usr/include -name "mysql.h" -o -name "mariadb.h" 2>/dev/null); do
-	dir=$(dirname "$header")
-	parent_dir=$(dirname "$dir")
-	
-	[[ "$SQL_INC" != *"-I$dir"* ]] && SQL_INC="$SQL_INC -I$dir"
-	[[ "$SQL_INC" != *"-I$parent_dir"* ]] && SQL_INC="$SQL_INC -I$parent_dir"
+    dir=$(dirname "$header")
+    parent_dir=$(dirname "$dir")
+    
+    [[ "$SQL_INC" != *"-I$dir"* ]] && SQL_INC="$SQL_INC -I$dir"
+    [[ "$SQL_INC" != *"-I$parent_dir"* ]] && SQL_INC="$SQL_INC -I$parent_dir"
 done
 
 if [ -z "$SQL_INC" ]; then
-	SQL_INC="-I/usr/include/mysql -I/usr/include/mariadb -I/usr/include"
+    SQL_INC="-I/usr/include/mysql -I/usr/include/mariadb -I/usr/include"
 fi
 
-# 2. Detección de la biblioteca dinámica cliente en el sistema
-DYNAMIC_LIB=""
-if find /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu -name "libmariadb.so*" -o -name "libmysqlclient.so*" 2>/dev/null | grep -q .; then
-	# Inyectar ambas por compatibilidad si existen enlaces
-	DYNAMIC_LIB="-lmariadb"
-	# Fallback en Debian si -lmariadb no existe
-	if ! gcc -shared -o /dev/null -lmariadb 2>/dev/null; then
-		DYNAMIC_LIB="-lmysqlclient"
-	fi
-else
-	DYNAMIC_LIB="-lmysqlclient"
-fi
-
-# 2. Detección de la bandera de enlace para MySQL/MariaDB
+# 2. Detección de la bandera de enlace dinámica para MariaDB / MySQL
 SQL_LDFLAGS=""
 if pkg-config --libs mariadb 2>/dev/null | grep -q -- "-l"; then
-	SQL_LDFLAGS=$(pkg-config --libs mariadb)
+    SQL_LDFLAGS=$(pkg-config --libs mariadb)
 elif pkg-config --libs mysqlclient 2>/dev/null | grep -q -- "-l"; then
-	SQL_LDFLAGS=$(pkg-config --libs mysqlclient)
+    SQL_LDFLAGS=$(pkg-config --libs mysqlclient)
 elif [ -f /usr/lib/x86_64-linux-gnu/libmariadb.so ] || [ -f /usr/lib/libmariadb.so ]; then
-	SQL_LDFLAGS="-lmariadb"
+    SQL_LDFLAGS="-lmariadb"
 else
-	SQL_LDFLAGS="-lmysqlclient"
+    SQL_LDFLAGS="-lmysqlclient"
 fi
 
 prettyprint 0 "Banderas de enlace SQL detectadas: $SQL_LDFLAGS"
 
-# Compilar módulos en subdirectorios (ej: clibs/cmariadb/)
+# Compilar módulos multianchivo en subdirectorios (ej: clibs/cmariadb/, clibs/cjob/)
 for mod_dir in "$CLIBS_DIR"/*/; do
-	[ -d "$mod_dir" ] || continue
-	name=$(basename "$mod_dir")
-	out="$OUT_DIR/$name.so"
-	prettyprint 0 "Compilando módulo modular: $name/ . . ."
+    [ -d "$mod_dir" ] || continue
+    name=$(basename "$mod_dir")
+    out="$OUT_DIR/$name.so"
+    prettyprint 0 "Compilando módulo modular: $name/ . . ."
 
-	EXTRA_FLAGS=""
-	if [ "$name" = "cmariadb" ]; then
-		# Buscar la librería estática en el contenedor
-		STATIC_LIB=$(find /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu -name "libmysqlclient.a" -o -name "libmariadbclient.a" -o -name "libmariadb.a" 2>/dev/null | head -n 1)
+    EXTRA_FLAGS=""
+    if [ "$name" = "cmariadb" ]; then
+        # Buscar librería estática en el sistema
+        STATIC_LIB=$(find /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu -name "libmysqlclient.a" -o -name "libmariadbclient.a" -o -name "libmariadb.a" 2>/dev/null | head -n 1)
 
-		if [ -n "$STATIC_LIB" ]; then
-			prettyprint 0 "Incrustando biblioteca estática: $STATIC_LIB"
-			# Se añade -lstdc++ para resolver RTTI y tipos de C++
-			EXTRA_FLAGS="$STATIC_LIB -lstdc++ -lssl -lcrypto -lz -lpthread -ldl -lm"
-		else
-			prettyprint 1 "No se encontró .a estático, usando enlace dinámico estándar"
-			EXTRA_FLAGS="-lmysqlclient"
-		fi
-	fi
+        if [ -n "$STATIC_LIB" ]; then
+            prettyprint 0 "Incrustando biblioteca estática: $STATIC_LIB"
+            # -Wl,--start-group / --end-group resuelve referencias cruzadas no ordenadas
+            EXTRA_FLAGS="-Wl,--start-group $STATIC_LIB -lstdc++ -lssl -lcrypto -lz -lpthread -ldl -lm -Wl,--end-group"
+        else
+            prettyprint 1 "No se encontró .a estático, usando enlace dinámico detectado: $SQL_LDFLAGS"
+            EXTRA_FLAGS="$SQL_LDFLAGS"
+        fi
+    fi
 
-	gcc -O3 -fPIC -shared \
-		"$mod_dir"*.c \
-		-I/usr/include/luajit-2.1 \
-		-I"$CLIBS_DIR" \
-		-I"$mod_dir" \
-		${SQL_INC:-} \
-		-o "$out" \
-		-lluajit-5.1 \
-		$EXTRA_FLAGS \
-		$(pkg-config --cflags --libs lua5.1 2>/dev/null || echo "")
+    # Compilación genérica de módulos C en subcarpetas
+    gcc -O3 -fPIC -shared \
+        "$mod_dir"*.c \
+        -I/usr/include/luajit-2.1 \
+        -I"$CLIBS_DIR" \
+        -I"$mod_dir" \
+        ${SQL_INC:-} \
+        -o "$out" \
+        -lluajit-5.1 \
+        $EXTRA_FLAGS \
+        $(pkg-config --cflags --libs lua5.1 2>/dev/null || echo "")
 
-	if [ $? -eq 0 ]; then
-		prettyprint 0 "OK: $name.so generado"
-	else
-		prettyprint 2 "Fallo compilando $name"
-	fi
+    if [ $? -eq 0 ]; then
+        prettyprint 0 "OK: $name.so generado en $out"
+    else
+        prettyprint 2 "Fallo compilando el módulo $name"
+    fi
 done
 
 # Compilar archivos .c simples sueltos en la raíz de clibs/
@@ -328,13 +316,7 @@ if ! "$VENV_PATH/bin/python" -m pip --version > /dev/null 2>&1; then
 	exit 1
 fi
 
-prettyprint 0 "Instalando dependencias Python. . ."
-"$VENV_PATH/bin/python" -m pip install --upgrade pymongo matplotlib pandas numpy scikit-learn umap-learn plotly dash seaborn
+# prettyprint 0 "Instalando dependencias Python. . ."
+# "$VENV_PATH/bin/python" -m pip install --upgrade pymongo matplotlib pandas numpy scikit-learn umap-learn plotly dash seaborn
 
 prettyprint 0 "Instalacion completada correctamente."
-
-if [ ! -f "$BASE_PATH/data/train.csv" ]; then
-	cd "$BASE_PATH/data"
-	unzip train.csv.zip
-	cd -
-fi
