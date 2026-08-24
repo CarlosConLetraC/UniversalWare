@@ -1,3 +1,5 @@
+--TODO: convetir este modulo <Table.lua> a una libreria dinamica de C (Table.so).
+
 local Convert, ConvertStream, Table, --[[seen,]] FIXER, _Settings = {}, {}, {}, --[[{totaljumps = 0},]] {}, {}
 
 local tostring, tonumber, rawequal, rawset, type, typeof, unpack, pairs, ipairs =

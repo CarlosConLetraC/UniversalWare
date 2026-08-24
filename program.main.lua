@@ -1,7 +1,6 @@
 import("cmariadb", "system")
 
 -- 1. Conexión a MariaDB activando MULTIPLE_STATEMENTS para scripts DDL
--- local db, err = cmariadb.connect("localhost", "lua_client", "12345", nil, 3306, cmariadb.CLIENT_MODE.MULTIPLE_STATEMENTS, "/tmp/mysql.sock")
 local db, err = cmariadb.connect({
     host = "127.0.0.1",
     user = "lua_client",
@@ -133,46 +132,46 @@ local marcas_vals, categorias_vals, productos_vals = {}, {}, {}
 local ingredientes_vals, recetas_vals, clientes_vals = {}, {}, {}
 local repartidores_vals, pedidos_vals, detalle_vals = {}, {}, {}
 
--- A. Marcas y Categorías
+-- A. Marcas y Categorías (Sin hardcodear ID)
 for i = 1, #marcas_cat, 1 do
-    table.insert(marcas_vals, string.format("(%d, '%s', TRUE)", i, marcas_cat[i]))
-    table.insert(categorias_vals, string.format("(%d, '%s')", i, categorias_cat[i]))
+    table.insert(marcas_vals, string.format("('%s', TRUE)", marcas_cat[i]))
+    table.insert(categorias_vals, string.format("('%s')", categorias_cat[i]))
 end
 
--- B. Productos (10 aleatorios)
+-- B. Productos (Sin hardcodear id_producto)
 local nombres_prod = {"Doble", "Especial", "Crujiente", "Suprema", "Mix", "Tradi", "Mega", "Deluxe"}
 for i = 1, 10, 1 do
     local m_id = rand_num(1, #marcas_cat)
     local c_id = rand_num(1, #categorias_cat)
     local nom = string.format("%s %s %d", categorias_cat[c_id], rand_elt(nombres_prod), i)
-    table.insert(productos_vals, string.format("(%d, %d, %d, '%s', %s)", i, m_id, c_id, nom, rand_float(80, 250)))
+    table.insert(productos_vals, string.format("(%d, %d, '%s', %s)", m_id, c_id, nom, rand_float(80, 250)))
 end
 
--- C. Ingredientes (8 aleatorios)
+-- C. Ingredientes (Sin hardcodear id_ingrediente)
 local base_ing = {"Carne", "Queso", "Tortilla", "Pollo", "Masa", "Salsa", "Verdura", "Arroz"}
 for i = 1, 8, 1 do
     local nom = string.format("%s %s", rand_elt(base_ing), rand_elt(apellidos))
     local um = (i == 3 or i == 5) and "Pieza" or "Kg"
-    table.insert(ingredientes_vals, string.format("(%d, '%s', '%s', %s, 5.000)", i, nom, um, rand_float(20, 100)))
+    table.insert(ingredientes_vals, string.format("('%s', '%s', %s, 5.000)", nom, um, rand_float(20, 100)))
 end
 
--- D. Recetas
+-- D. Recetas (Relación N:M, usa las FKs asumidas)
 for i = 1, 10, 1 do
     local ing_id = rand_num(1, 8)
     table.insert(recetas_vals, string.format("(%d, %d, %s)", i, ing_id, rand_float(0.05, 0.5)))
 end
 
--- E. Clientes y Repartidores (8 de cada uno)
+-- E. Clientes y Repartidores (Sin hardcodear id_cliente ni id_repartidor)
 for i = 1, 8, 1 do
     local nom_cli = string.format("%s %s", rand_elt(nombres_personas), rand_elt(apellidos))
     local dir = string.format("%s %d", rand_elt(calles), rand_num(10, 999))
-    table.insert(clientes_vals, string.format("(%d, '%s', '%s', '%s')", i, nom_cli, rand_tel(), dir))
+    table.insert(clientes_vals, string.format("('%s', '%s', '%s')", nom_cli, rand_tel(), dir))
 
     local nom_rep = string.format("%s %s", rand_elt(nombres_personas), rand_elt(apellidos))
-    table.insert(repartidores_vals, string.format("(%d, '%s', '%s', %s)", i, nom_rep, rand_tel(), rand_elt(vehiculos)))
+    table.insert(repartidores_vals, string.format("('%s', '%s', %s)", nom_rep, rand_tel(), rand_elt(vehiculos)))
 end
 
--- F. Pedidos y Detalle (15 pedidos)
+-- F. Pedidos y Detalle (Sin hardcodear id_pedido)
 for i = 1, 15, 1 do
     local cli_id = rand_num(1, 8)
     local rep_id = rand_num(1, 8)
@@ -186,8 +185,8 @@ for i = 1, 15, 1 do
     table.insert(
         pedidos_vals,
         string.format(
-            "(%d, %d, %d, %s, '%s', %s, %s)",
-            i, cli_id, rep_id, rand_elt(plataformas), f_hora, rand_elt(estados), total
+            "(%d, %d, %s, '%s', %s, %s)",
+            cli_id, rep_id, rand_elt(plataformas), f_hora, rand_elt(estados), total
         )
     )
         
@@ -198,28 +197,28 @@ end
 local dml_inserts = string.format([[
     SET FOREIGN_KEY_CHECKS = 0;
 
-    INSERT INTO marcas (id_marca, nombre, activa) VALUES %s
+    INSERT INTO marcas (nombre, activa) VALUES %s
     ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
 
-    INSERT INTO categorias (id_categoria, nombre) VALUES %s
+    INSERT INTO categorias (nombre) VALUES %s
     ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
 
-    INSERT INTO productos (id_producto, id_marca, id_categoria, nombre, precio_venta) VALUES %s
+    INSERT INTO productos (id_marca, id_categoria, nombre, precio_venta) VALUES %s
     ON DUPLICATE KEY UPDATE precio_venta=VALUES(precio_venta);
 
-    INSERT INTO ingredientes (id_ingrediente, nombre, unidad_medida, stock_actual, stock_minimo) VALUES %s
+    INSERT INTO ingredientes (nombre, unidad_medida, stock_actual, stock_minimo) VALUES %s
     ON DUPLICATE KEY UPDATE stock_actual=VALUES(stock_actual);
 
     INSERT INTO recetas (id_producto, id_ingrediente, cantidad_requerida) VALUES %s
     ON DUPLICATE KEY UPDATE cantidad_requerida=VALUES(cantidad_requerida);
 
-    INSERT INTO clientes (id_cliente, nombre, telefono, direccion) VALUES %s
+    INSERT INTO clientes (nombre, telefono, direccion) VALUES %s
     ON DUPLICATE KEY UPDATE telefono=VALUES(telefono);
 
-    INSERT INTO repartidores (id_repartidor, nombre, telefono, vehiculo) VALUES %s
+    INSERT INTO repartidores (nombre, telefono, vehiculo) VALUES %s
     ON DUPLICATE KEY UPDATE vehiculo=VALUES(vehiculo);
 
-    INSERT INTO pedidos (id_pedido, id_cliente, id_repartidor, plataforma_origen, fecha_hora, estado, total) VALUES %s
+    INSERT INTO pedidos (id_cliente, id_repartidor, plataforma_origen, fecha_hora, estado, total) VALUES %s
     ON DUPLICATE KEY UPDATE estado=VALUES(estado);
 
     INSERT INTO detalle_pedidos (id_pedido, id_producto, cantidad, precio_unitario) VALUES %s
