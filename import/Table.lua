@@ -501,11 +501,11 @@ ConvertStream["number"] = function(val, seen, depth, page, nohighlight, DoMethod
         return
     end
 
-    file:write(string.format("%.14g", val))
+    file:write(string_format("%.14g", val))
 end
 
 ConvertStream["string"] = function(val, seen, depth, page, nohighlight, DoMethod, file)
-    file:write(string.format("%q", val))
+    file:write(string_format("%q", val))
 end
 
 ConvertStream["boolean"] = function(val, seen, depth, page, nohighlight, DoMethod, file)
@@ -517,7 +517,7 @@ ConvertStream["nil"] = function(_, seen, depth, page, nohighlight, DoMethod, fil
 end
 
 ConvertStream["function"] = function(val, seen, depth, page, nohighlight, DoMethod, file)
-    local addr = tostring(val):gsub("function: ", "")
+    local addr = string_gsub(tostring(val), "function: ", "")
     file:write("\"function at " .. addr .. "\"")
 end
 
@@ -525,16 +525,16 @@ ConvertStream["userdata"] = function(val, seen, depth, page, nohighlight, DoMeth
     local mt = gmt(val)
 
     if mt and rawget(mt, "__tostring") then
-        file:write(string.format("\"%s\"", tostring(val)))
+        file:write(string_format("\"%s\"", tostring(val)))
         return
     end
 
-    local addr = tostring(val):gsub("userdata: ", "")
+    local addr = string_gsub(tostring(val), "userdata: ", "")
     file:write("\"userdata at " .. addr .. "\"")
 end
 
 ConvertStream["thread"] = function(val, seen, depth, page, nohighlight, DoMethod, file)
-    local addr = tostring(val):gsub("thread: ", "")
+    local addr = string_gsub(tostring(val), "thread: ", "")
     file:write("\"thread at " .. addr .. "\"")
 end
 
