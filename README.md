@@ -1,6 +1,6 @@
 # 🚀 UniversalWare
 
-> **UniversalWare** es un ecosistema de software híbrido de alto rendimiento diseñado para orquestar tareas concurrentes con baja latencia y control estricto de recursos. Combina la velocidad de C++17 y librerías nativas con la agilidad de LuaJIT para la lógica de negocio.
+> **UniversalWare** es un ecosistema de software híbrido de alto rendimiento diseñado para orquestar tareas concurrentes con baja latencia y control estricto de recursos. Combina la velocidad de C/C++ y librerías dinámicas (`.so`) con la agilidad de LuaJIT para la lógica de negocio.
 
 ---
 
@@ -8,7 +8,7 @@
 - [Vista General](#-vista-general)
 - [Caso de Uso: Dark Kitchen](#-caso-de-uso-dark-kitchen)
 - [Arquitectura del Sistema](#-arquitectura-del-sistema)
-- [Estructura del Repositorio](#-estructura-del-repositorio)
+- [Estructura Completa del Repositorio](#-estructura-completa-del-repositorio)
 - [Requisitos del Sistema](#-requisitos-del-sistema)
 - [Instalación y Uso](#-instalación-y-uso)
 - [Herramientas CLI y Diagnóstico](#-herramientas-cli-y-diagnóstico)
@@ -20,18 +20,21 @@
 ## 📸 Vista General
 
 El sistema está diseñado bajo el principio de **separación de responsabilidades**:
-- **C++17 (`backend.cpp` + `libbackend`)**: Maneja la orquestación multihilo, balanceo de carga, límites de recursos (CPU/RAM) y la interfaz de bajo nivel con MariaDB.
-- **LuaJIT (`program.*.lua`)**: Proporciona un entorno ágil e hiper-rápido para implementar reglas de negocio sin necesidad de recompilar el núcleo.
-- **Shell Automation (`run.sh`, `pods.sh`, `cmd`)**: Ofrece herramientas idóneas para CI/CD local, entorno interactivo REPL y compilación aislada.
+- **C++17 (`backend.cpp` + `libbackend/`)**: Orquestador principal multihilo que gestiona el pool de trabajadores (`Worker.h`), la cola de trabajos (`Job.h`, `Scheduler.h`) y la distribución (`Broker.h`).
+- **Librerías Nativas y Dinámicas (`clibs/`, `cpplibs/`, `import/Linux/`)**: Módulos optimizados para MariaDB (`cmariadb.so`), multitarea/planificación (`cjob.so`), utilidades estadísticas (`cstats.so`), procesamiento CSV acelerado (`csvfast.so`), Machine Learning (`cml.so`) y utilidades SSH (`ssh.so`).
+- **Módulos y Utilidades Lua (`import/`)**: Proporcionan abstracciones matemáticas/vectoriales (`Vector2`, `Vector3`, `Color3`), estructuras de datos (`Lista`, `Nodo`), compatibilidad con formatos (`json`, `csv`, `base64`), enums visuales/animación (`EasingModes`) y primitivas de tareas (`task.lua`).
+- **LuaJIT (`program.main.lua`)**: Punto de entrada de alto nivel para ejecutar reglas de negocio e iteraciones dinámicas sin recompensar el núcleo.
+- **Shell Automation (`run.sh`, `pods.sh`, `cmd`, `build.sh`)**: Automatización completa para CI/CD local, entorno interactivo REPL, compilación y despliegue.
 
 ---
 
 ## 🍕 Caso de Uso: Dark Kitchen
 
 El repositorio incluye un caso de estudio enfocado en la gestión integral de una **Dark Kitchen** (cocina fantasma de alto volumen):
-* **Ingesta de Pedidos en Tiempo Real:** Persistencia continua en MariaDB mediante el driver nativo `cmariadb` con manejo de datos mediante `SqlValue`.
-* **Cálculo de Rutas Logísticas:** Utilización del módulo nativo `cgraph` (Dijkstra) para la asignación eficiente de repartidores.
-* **Control de Concurrencia:** Orquestación de múltiples instancias Lua paralelas sin colapsar el hardware ni generar cuellos de botella en la toma de comanda.
+* **Ingesta de Pedidos en Tiempo Real:** Persistencia continua y lectura transaccional en MariaDB a través del módulo nativo `cmariadb.so`.
+* **Carga Masiva de Menús e Inventarios:** Procesamiento e ingesta ultrarrápida de archivos CSV de insumos mediante `csvfast.so` y `csv.lua`.
+* **Analítica y Proyecciones de Demanda:** Modelado estocástico de pedidos e inventarios críticos combinando el rendimiento de `cstats.so` y `cml.so`.
+* **Orquestación Concurrente:** Procesamiento de comandas y ejecución de tareas pesadas en segundo plano mediante `cjob.so` y el motor multihilo de `libbackend/`.
 
 ---
 
@@ -58,45 +61,74 @@ El repositorio incluye un caso de estudio enfocado en la gestión integral de un
                                        │
  ┌─────────────────────────────────────▼──────────────────────────────────┐
  │                      CAPA DE NÚCLEO NATIVO (C/C++)                     │
- │   ┌───────────────────────┐   ┌─────────────────┐   ┌──────────────┐   │
- │   │   libbackend / cjob   │   │    cmariadb     │   │   cgraph     │   │
- │   │ (ThreadPool, Scheduler│   │ (Driver C++ SQL)│   │  (Dijkstra)  │   │
- │   └───────────────────────┘   └────────┬────────┘   └──────────────┘   │
- └────────────────────────────────────────┼───────────────────────────────┘
-                                          │
- ┌────────────────────────────────────────▼───────────────────────────────┐
- │                           CAPA DE PERSISTENCIA                         │
- │                         ┌─────────────────────┐                        │
- │                         │  MariaDB / MySQL    │                        │
- │                         └─────────────────────┘                        │
+ │  ┌─────────────────────────┐ ┌───────────────┐ ┌─────────────────────┐  │
+ │  │ import/Linux/ (*.so)    │ │ clibs/ &      │ │ libbackend/         │  │
+ │  │  ├── cmariadb.so        │ │ cpplibs/      │ │  (ThreadPool,       │  │
+ │  │  ├── cjob.so / cml.so   │ │  (C/C++       │ │   Scheduler,        │  │
+ │  │  └── csvfast.so / stats │ │   Source)     │ │   Broker, Worker)   │  │
+ │  └─────────────────────────┘ └───────────────┘ └─────────────────────┘  │
+ └─────────────────────────────────────┬──────────────────────────────────┘
+                                       │
+ ┌─────────────────────────────────────▼──────────────────────────────────┐
+ │                       PERSISTENCIA Y CONFIGURACIÓN                     │
+ │         ┌─────────────────────┐       ┌────────────────────────┐       │
+ │         │  MariaDB / MySQL    │       │ data/ (*.json)         │       │
+ │         └─────────────────────┘       └────────────────────────┘       │
  └────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📂 Estructura del Repositorio
+## 📂 Estructura Completa del Repositorio
 
 ```text
 UniversalWare/
+├── backend                   # Binario ejecutable compilado del orquestador
 ├── backend.cpp               # Orquestador principal en C++17
-├── build.sh                  # Script de compilación del proyecto
-├── clibs/                    # Librerías nativas en C (cmariadb, cjob, etc.)
-├── cmd                       # CLI para ejecutar sentencias Lua rápidas
-├── configurarentorno.sh      # Script de preparación de dependencias y venv
-├── cpplibs/                  # Librerías dinámicas C++ (cgraph, etc.)
-├── import/                   # Módulos compartidos e inicializadores de Lua
-├── initconsole               # Consola REPL interactiva de diagnósticos
-├── libbackend/               # Motor de multihilo Header-Only (Scheduler, ThreadPool)
+├── build.sh                  # Script de compilación de módulos C/C++ y librerías dinámicas
+├── clibs/                    # Código fuente C de librerías nativas
+│   ├── cjob/                 # Gestor/programador nativo de tareas (cjob.h, job.c, scheduler.c)
+│   ├── cmariadb/             # Driver cliente MariaDB (clientmodes.h, datatypes.h, main.c)
+│   └── cstats.c              # Módulo C de cálculo estadístico
+├── cmd                       # CLI para evaluar sentencias Lua directas
+├── configurarentorno.sh      # Preparación de dependencias y venv
+├── cpplibs/                  # Código fuente C++ de librerías dinámicas
+│   ├── cml.cpp               # Módulo C++ para Machine Learning
+│   └── csvfast.cpp           # Parser ultrarrápido de archivos CSV
+├── data/                     # Archivos de configuración y semillas de datos JSON
+│   ├── guid_rand.json
+│   └── rand_config.json
+├── import/                   # Módulos, librerías y bins binarios para Lua
+│   ├── base64.lua / bit32.lua
+│   ├── Chat.lua / Color3.lua / File.lua / Math.lua / String.lua / Table.lua
+│   ├── csv.lua / json.lua / ctx.lua / system.lua / task.lua
+│   ├── Lista.lua / Nodo.lua
+│   ├── EasingModes.lua / Enum/ (EaseMode, Faces, FaceType, Shape, StyleMode)
+│   ├── sublibs/               # Tipos vectoriales secundarios (Color3, Vector2, Vector3)
+│   ├── Linux/                # Binarios dinámicos compilados (.so) para Linux
+│   │   ├── cjob.so
+│   │   ├── cmariadb.so
+│   │   ├── cml.so
+│   │   ├── cstats.so
+│   │   ├── csvfast.so
+│   │   ├── ssh.so
+│   │   └── nada.lua
+│   └── Windows/              # Mapeo de compatibilidad para plataformas Windows
+│       └── nada.lua
+├── initconsole               # Consola REPL interactiva con entorno pre-cargado
+├── libbackend/               # Motor multihilo Header-Only en C++
 │   ├── Broker.h
 │   ├── Job.h
 │   ├── Scheduler.h
 │   ├── ThreadPool.h
 │   └── Worker.h
-├── pods.sh                   # Funciones Bash helper para construir/ejecutar Podman
+├── LICENCE                   # Licencia del proyecto
+├── pods.sh                   # Helpers Bash para construcción y ejecución con Podman
 ├── program.main.lua          # Punto de entrada principal en Lua
-├── run.sh                    # Entrypoint unificado con auto-recuperación
-├── runclient                 # Wrapper de ejecución de entornos para LuaJIT
-└── ubuntu_jammy.dockerfile   # Dockerfile con usuario no-root 'pc' (Ubuntu 22.04)
+├── README.md                 # Documentación del proyecto
+├── runclient                 # Wrapper de ejecución del runtime LuaJIT
+├── run.sh                    # Entrypoint principal de automatización
+└── ubuntu_jammy.dockerfile   # Dockerfile no-root (usuario 'pc') basado en Ubuntu 22.04
 ```
 
 ---
@@ -120,24 +152,24 @@ cd UniversalWare
 ```
 
 ### 2. Ejecución Automatizada (Recomendado)
-El script `run.sh` es **idempotente y tolerante a fallos**. Detecta la falta de binarios, configura el entorno virtual y compila el orquestador si es necesario antes de arrancar:
+El script `run.sh` es **idempotente y tolerante a fallos**. Verificará dependencias, compilará componentes faltantes y ejecutará el ecosistema:
 
 ```bash
 chmod +x run.sh
 ./run.sh
 ```
 
-### 3. Compilación Manual de `backend`
-Si deseas compilar únicamente el orquestador C++17 con optimizaciones `-O3`:
+### 3. Compilación Manual de Módulos y `backend`
+Para reconstruir los binarios nativos `.so` y el ejecutable principal:
 
 ```bash
-g++ -std=c++17 -O3 backend.cpp -I. -lpthread -o backend
+chmod +x build.sh
+./build.sh
 ```
 
-Para ejecutarlo pasando un directorio con instancias Lua (`program*.lua`):
-
+O compilar individualmente el orquestador C++17:
 ```bash
-./backend instanciasUniversalWare/
+g++ -std=c++17 -O3 backend.cpp -I. -lpthread -o backend
 ```
 
 ---
@@ -145,24 +177,24 @@ Para ejecutarlo pasando un directorio con instancias Lua (`program*.lua`):
 ## 🛠️ Herramientas CLI y Diagnóstico
 
 ### Consola Interactiva REPL (`initconsole`)
-Abre una sesión activa de LuaJIT cargando el entorno de `import/`:
+Abre una sesión activa de LuaJIT cargando automáticamente el entorno en `import/`:
 ```bash
 ./initconsole
 ```
 
 ### Ejecución de Comandos Directos (`cmd`)
-Permite evaluar una instrucción de Lua en una sola línea manteniendo las dependencias cargadas:
+Evalúa expresiones o archivos Lua manteniendo el contexto precargado:
 ```bash
-./cmd "print('Estado del sistema OK')"
+./cmd "print('UniversalWare listo')"
 ```
 
 ---
 
 ## 🐳 Despliegue con Contenedores (Podman / Docker)
 
-El proyecto cuenta con integración nativa para **Podman** a través de `ubuntu_jammy.dockerfile` (configurado con un usuario no-root `pc` en `/home/pc`) y las funciones facilitadoras en `pods.sh`:
+El proyecto incluye integración completa con **Podman** usando `ubuntu_jammy.dockerfile` (configurado con el usuario `pc` en `/home/pc`) y las funciones facilitadoras en `pods.sh`:
 
-### 1. Cargar las funciones helper en la sesión de terminal
+### 1. Cargar las funciones helper
 ```bash
 source pods.sh
 ```
@@ -172,14 +204,14 @@ source pods.sh
 podmanbuild ubuntu_jammy.dockerfile universalware-env
 ```
 
-### 3. Ejecutar el contenedor con montaje del directorio actual
-La función `podmanrun` mapea el directorio del proyecto a `/home/pc` dentro del contenedor manteniendo permisos con `--userns=keep-id`:
+### 3. Ejecutar el contenedor
+La función `podmanrun` mapea el proyecto a `/home/pc` con el flag `--userns=keep-id`:
 
 ```bash
 podmanrun universalware-env
 ```
 
-Una vez dentro del contenedor, puedes iniciar el ecosistema mediante:
+Una vez dentro del contenedor:
 ```bash
 ./run.sh
 ```
@@ -188,4 +220,4 @@ Una vez dentro del contenedor, puedes iniciar el ecosistema mediante:
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia **MIT** (o la licencia especificada en el archivo [LICENCE](LICENCE)). Sientete libre de consultar el archivo para más detalles.
+Este proyecto está bajo la Licencia **MIT** (o la especificada en el archivo [LICENCE](LICENCE)).
