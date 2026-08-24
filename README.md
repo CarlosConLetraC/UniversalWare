@@ -220,6 +220,16 @@ cd RUTA_DE_UNIVERSAL_WARE
 
 ---
 
+## 🎥 Demostración del Sistema
+
+[![Demostración en Video - UniversalWare](https://img.youtube.com/vi/cSeMVpyOpf8/maxresdefault.jpg)](https://www.youtube.com/watch?v=cSeMVpyOpf8)
+
+> 💡 *Haz clic en la imagen superior para ver el video explicativo de la ejecución del sistema en YouTube.*
+
+---
+
+---
+
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia **MIT** (o la especificada en el archivo [LICENCE](LICENCE)).
