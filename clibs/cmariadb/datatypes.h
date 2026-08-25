@@ -1,5 +1,5 @@
 #ifndef CMARIADB_DATATYPES_H
-#define CMARIADB_DATATYPES_H
+    #define CMARIADB_DATATYPES_H
 
     #include <lua.h>
     #include <lauxlib.h>
@@ -7,10 +7,17 @@
     #include <stdlib.h>
     #include <string.h>
     #include <stdint.h>
+    #include <stddef.h>
+    #include <stdio.h>
+    #include <stdint.h>
+    #include <ctype.h>
+    #include <arpa/inet.h>
 
-    #define SQLVALUE_META "SqlValueMeta"
+    // #define SQLVALUE_META "SqlValueMeta"
     #define MARIADB_LUA_METATABLE "MariaDB.Connection"
     #define MARIADB_SQLVALUE_METATABLE "cmariadb.SqlValue.meta"
+    #define SQLVALUE_META "MariaDB.SqlValue"
+    #define SQLVALUE_GEOM_META "MariaDB.SqlValue.Geometry"
 
     // Estructura contenedora para el Userdata de Lua (Conexión)
     typedef struct {
@@ -42,6 +49,50 @@
     SqlValue* l_sqlvalue_create_impl(lua_State *L, enum enum_field_types type, int is_int);
     SqlValue* new_sql_value(lua_State *L, enum enum_field_types type);
 
+    // Estructura auxiliar interna para construir listas dinámicas de puntos durante el parseo WKT
+    typedef struct {
+        double x, y;
+    } WKTPoint;
+
+    typedef struct {
+        WKTPoint *points;
+        size_t count;
+        size_t capacity;
+    } WKTPointList;
+
+    // Estructura auxiliar temporal para almacenar sub-geometrías parseadas
+    typedef struct {
+        unsigned char *data;
+        size_t len;
+    } SubGeom;
+
+    /* Tipos de geometrías soportados según OpenGIS */
+    typedef enum {
+        GEOM_TYPE_UNKNOWN = 0,
+        GEOM_TYPE_POINT = 1,
+        GEOM_TYPE_LINESTRING = 2,
+        GEOM_TYPE_POLYGON = 3,
+        GEOM_TYPE_MULTIPOINT = 4,
+        GEOM_TYPE_MULTILINESTRING = 5,
+        GEOM_TYPE_MULTIPOLYGON = 6,
+        GEOM_TYPE_GEOMETRYCOLLECTION = 7
+    } GeometryType;
+
+    /* Estructura alineada al almacenamiento interno de MariaDB/MySQL */
+    typedef struct {
+        uint32_t srid;            /* 4 bytes: Spatial Reference System Identifier */
+        uint8_t byte_order;       /* 1 byte: 1 = Little-Endian (NDR), 0 = Big-Endian (XDR) */
+        GeometryType type;        /* 4 bytes: Código de tipo de geometría (1-7) */
+        size_t coordinate_len;    /* Longitud del payload de coordenadas */
+        unsigned char *coordinates; /* Puntero a los bytes de coordenadas (ej. dobles IEEE 754) */
+    } MariaDBGeometry;
+
+    /* Funciones para manejo de GEOMETRY */
+    int parse_wkt_to_geometry(const char *wkt_str, MariaDBGeometry *geom);
+    int serialize_geometry_to_wkb(const MariaDBGeometry *geom, unsigned char *buf, size_t buf_len);
+    int parse_internal_geometry(const unsigned char *src, size_t len, MariaDBGeometry *geom);
+    int parse_wkb_geometry(const unsigned char *src, size_t len, MariaDBGeometry *geom);
+
     // --- MACROS CONSTRUCTORAS AMPLIADAS ---
     // Numéricos
     #define l_sqlvalue_tiny(L)      (l_sqlvalue_create_impl((L), MYSQL_TYPE_TINY, 1))
@@ -72,7 +123,7 @@
 
     // Binarios, Blobs y Geometría
     #define l_sqlvalue_blob(L)      (l_sqlvalue_create_impl((L), MYSQL_TYPE_LONG_BLOB, 0))
-    #define l_sqlvalue_geometry(L)  (l_sqlvalue_create_impl((L), MYSQL_TYPE_GEOMETRY, 0))
+    // #define l_sqlvalue_geometry(L)  (l_sqlvalue_create_impl((L), MYSQL_TYPE_GEOMETRY, 0))
 
     // Registro y Deserialización
     void register_sqlvalue_meta(lua_State *L);
