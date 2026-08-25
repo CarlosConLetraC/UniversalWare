@@ -34,20 +34,20 @@ typedef struct {
 SqlValue* l_sqlvalue_create_impl(lua_State *L, enum enum_field_types type, int is_int);
 SqlValue* new_sql_value(lua_State *L, enum enum_field_types type);
 
-#define l_sqlvalue_float(L)   (l_sqlvalue_create_impl((L), MYSQL_TYPE_FLOAT, 0))
-#define l_sqlvalue_double(L)  (l_sqlvalue_create_impl((L), MYSQL_TYPE_DOUBLE, 0))
-#define l_sqlvalue_decimal(L) (l_sqlvalue_create_impl((L), MYSQL_TYPE_NEWDECIMAL, 0))
-#define l_sqlvalue_integer(L) (l_sqlvalue_create_impl((L), MYSQL_TYPE_LONG, 1))
-#define l_sqlvalue_year(L)    (l_sqlvalue_create_impl((L), MYSQL_TYPE_YEAR, 1))
-#define l_sqlvalue_string(L)  (l_sqlvalue_create_impl((L), MYSQL_TYPE_VAR_STRING, 0))
-#define l_sqlvalue_bigint(L)  (l_sqlvalue_create_impl((L), MYSQL_TYPE_LONGLONG, 1))
-#define l_sqlvalue_tiny(L)    (l_sqlvalue_create_impl((L), MYSQL_TYPE_TINY, 1))
-#define l_sqlvalue_small(L)   (l_sqlvalue_create_impl((L), MYSQL_TYPE_SHORT, 1))
-#define l_sqlvalue_medium(L)  (l_sqlvalue_create_impl((L), MYSQL_TYPE_INT24, 1))
-#define l_sqlvalue_date(L)    (l_sqlvalue_create_impl((L), MYSQL_TYPE_DATE, 0))
-#define l_sqlvalue_datetime(L)(l_sqlvalue_create_impl((L), MYSQL_TYPE_DATETIME, 0))
-#define l_sqlvalue_time(L)    (l_sqlvalue_create_impl((L), MYSQL_TYPE_TIME, 0))
-#define l_sqlvalue_blob(L)    (l_sqlvalue_create_impl((L), MYSQL_TYPE_LONG_BLOB, 0))
+#define l_sqlvalue_float(L)    (l_sqlvalue_create_impl((L), MYSQL_TYPE_FLOAT, 0))
+#define l_sqlvalue_double(L)   (l_sqlvalue_create_impl((L), MYSQL_TYPE_DOUBLE, 0))
+#define l_sqlvalue_decimal(L)  (l_sqlvalue_create_impl((L), MYSQL_TYPE_NEWDECIMAL, 0))
+#define l_sqlvalue_integer(L)  (l_sqlvalue_create_impl((L), MYSQL_TYPE_LONG, 1))
+#define l_sqlvalue_year(L)     (l_sqlvalue_create_impl((L), MYSQL_TYPE_YEAR, 1))
+#define l_sqlvalue_string(L)   (l_sqlvalue_create_impl((L), MYSQL_TYPE_VAR_STRING, 0))
+#define l_sqlvalue_bigint(L)   (l_sqlvalue_create_impl((L), MYSQL_TYPE_LONGLONG, 1))
+#define l_sqlvalue_tiny(L)     (l_sqlvalue_create_impl((L), MYSQL_TYPE_TINY, 1))
+#define l_sqlvalue_small(L)    (l_sqlvalue_create_impl((L), MYSQL_TYPE_SHORT, 1))
+#define l_sqlvalue_medium(L)   (l_sqlvalue_create_impl((L), MYSQL_TYPE_INT24, 1))
+#define l_sqlvalue_date(L)     (l_sqlvalue_create_impl((L), MYSQL_TYPE_DATE, 0))
+#define l_sqlvalue_datetime(L) (l_sqlvalue_create_impl((L), MYSQL_TYPE_DATETIME, 0))
+#define l_sqlvalue_time(L)     (l_sqlvalue_create_impl((L), MYSQL_TYPE_TIME, 0))
+#define l_sqlvalue_blob(L)     (l_sqlvalue_create_impl((L), MYSQL_TYPE_LONG_BLOB, 0))
 
 void register_sqlvalue_meta(lua_State *L);
 void push_mariadb_field(lua_State *L, MYSQL_FIELD *field, char *val, unsigned long length);
