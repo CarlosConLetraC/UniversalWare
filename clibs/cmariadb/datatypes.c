@@ -137,15 +137,26 @@ static int sqlvalue_type(lua_State *L) {
 void register_sqlvalue_meta(lua_State *L) {
     luaL_newmetatable(L, SQLVALUE_META);
 
-    // Asignación explícita del metamétodo __tostring
+    // Asignación de metamétodos del sistema
     lua_pushcfunction(L, sqlvalue_tostring);
     lua_setfield(L, -2, "__tostring");
 
-    // Asignación opcional del recolector de basura si lo usas
     lua_pushcfunction(L, sqlvalue_gc);
     lua_setfield(L, -2, "__gc");
 
-    lua_pop(L, 1);
+    // --- AQUÍ REGISTRAMOS LOS MÉTODOS DE INSTANCIA (obj:tonumber(), obj:type()) ---
+    lua_pushcfunction(L, sqlvalue_tonumber);
+    lua_setfield(L, -2, "tonumber");
+
+    lua_pushcfunction(L, sqlvalue_type);
+    lua_setfield(L, -2, "type");
+
+    // Configuración del __index apuntando a la propia metatabla 
+    // para que LuaJIT sepa dónde buscar las funciones anteriores cuando se invoquen con ':'
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -2, "__index");
+
+    lua_pop(L, 1); // Limpiamos la metatabla de la pila
 }
 
 // 6. Función base constructora robusta (compatible con números y cdata de LuaJIT)

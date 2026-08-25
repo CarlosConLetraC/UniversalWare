@@ -8,6 +8,7 @@
 #include <string.h>
 
 #define SQLVALUE_META "SqlValueMeta"
+#define MARIADB_SQLVALUE_METATABLE "cmariadb.SqlValue.meta"
 
 // Estructura contenedora para el Userdata de Lua
 typedef struct {

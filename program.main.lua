@@ -108,89 +108,123 @@ if not ok then
 end
 print("[INFO] Tablas creadas/aseguradas exitosamente.")
 
--- 4. Generación Dinámica de Datos Aleatorios en LuaJIT
+-- 4. Generación Dinámica de Datos Aleatorios usando SqlValue de cmariadb
 math.randomseed(os.time())
+local SqlValue = cmariadb.SqlValue
 
--- Helpers de generación
 local function rand_elt(arr) return arr[math.random(#arr)] end
 local function rand_num(min, max) return math.random(min, max) end
-local function rand_float(min, max) return string.format("%.2f", min + math.random() * (max - min)) end
-local function rand_tel() return string.format("555%07d", math.random(0, 9999999)) end
 
--- Catálogos base para combinaciones aleatorias
 local nombres_personas = {"Carlos", "Ana", "Luis", "María", "Jorge", "Sofía", "Diego", "Valentina", "Mateo", "Camila"}
 local apellidos = {"Mendoza", "Gómez", "Torres", "Ortiz", "Silva", "Hernández", "Ramírez", "Juárez", "Ortega", "Ríos"}
 local calles = {"Av. Universidad", "Calle San Jerónimo", "Insurgentes Sur", "Reforma", "División del Norte", "Av. Juárez"}
 local marcas_cat = {"Burger Empire", "Taco Express", "Wok & Roll", "Pizza Lab", "Green Bowl Salads"}
 local categorias_cat = {"Hamburguesas", "Tacos y Antojitos", "Comida Asiática", "Pizzas Artesanales", "Ensaladas y Bebidas"}
-local plataformas = {"'UberEats'", "'Rappi'", "'DidiFood'", "'WebPropia'"}
-local estados = {"'Pendiente'", "'En Preparacion'", "'En Camino'", "'Entregado'", "'Cancelado'"}
-local vehiculos = {"'Motocicleta'", "'Bicicleta Electrica'", "'Automóvil'"}
+local plataformas = {"UberEats", "Rappi", "DidiFood", "WebPropia"}
+local estados = {"Pendiente", "En Preparacion", "En Camino", "Entregado", "Cancelado"}
+local vehiculos = {"Motocicleta", "Bicicleta Electrica", "Automóvil"}
 
--- Buffers para acumular los VALUES
 local marcas_vals, categorias_vals, productos_vals = {}, {}, {}
 local ingredientes_vals, recetas_vals, clientes_vals = {}, {}, {}
 local repartidores_vals, pedidos_vals, detalle_vals = {}, {}, {}
 
--- A. Marcas y Categorías (Sin hardcodear ID)
+-- A. Marcas y Categorías
+-- A. Marcas y Categorías
 for i = 1, #marcas_cat, 1 do
-    table.insert(marcas_vals, string.format("('%s', TRUE)", marcas_cat[i]))
-    table.insert(categorias_vals, string.format("('%s')", categorias_cat[i]))
+    local v_marca = SqlValue.string(marcas_cat[i])
+    local v_cat   = SqlValue.string(categorias_cat[i])
+    -- Agregamos comillas simples '%s' alrededor del tostring para que sea un string SQL válido
+    table.insert(marcas_vals, string.format("('%s', TRUE)", tostring(v_marca)))
+    table.insert(categorias_vals, string.format("('%s')", tostring(v_cat)))
 end
 
--- B. Productos (Sin hardcodear id_producto)
+-- B. Productos
 local nombres_prod = {"Doble", "Especial", "Crujiente", "Suprema", "Mix", "Tradi", "Mega", "Deluxe"}
 for i = 1, 10, 1 do
-    local m_id = rand_num(1, #marcas_cat)
-    local c_id = rand_num(1, #categorias_cat)
-    local nom = string.format("%s %s %d", categorias_cat[c_id], rand_elt(nombres_prod), i)
-    table.insert(productos_vals, string.format("(%d, %d, '%s', %s)", m_id, c_id, nom, rand_float(80, 250)))
+    local c_id = SqlValue.integer(rand_num(1, #categorias_cat))
+    local m_id = SqlValue.integer(rand_num(1, #marcas_cat))
+    local precio_val = 80 + math.random() * (250 - 80)
+    local v_precio = SqlValue.decimal(precio_val)
+    
+    -- Uso del nuevo método :tonumber() en lugar de acceder a campos internos
+    local cat_index = c_id:tonumber() or 1
+    local nom = string.format("%s %s %d", categorias_cat[cat_index], rand_elt(nombres_prod), i)
+    local v_nom = SqlValue.string(nom)
+    
+    table.insert(productos_vals, string.format("(%s, %s, '%s', %s)", tostring(m_id), tostring(c_id), tostring(v_nom), tostring(v_precio)))
 end
 
--- C. Ingredientes (Sin hardcodear id_ingrediente)
+-- C. Ingredientes
 local base_ing = {"Carne", "Queso", "Tortilla", "Pollo", "Masa", "Salsa", "Verdura", "Arroz"}
 for i = 1, 8, 1 do
     local nom = string.format("%s %s", rand_elt(base_ing), rand_elt(apellidos))
     local um = (i == 3 or i == 5) and "Pieza" or "Kg"
-    table.insert(ingredientes_vals, string.format("('%s', '%s', %s, 5.000)", nom, um, rand_float(20, 100)))
+    local stock_val = 20 + math.random() * (100 - 20)
+    
+    table.insert(ingredientes_vals, string.format("('%s', '%s', %s, 5.000)", 
+        tostring(SqlValue.string(nom)), 
+        tostring(SqlValue.string(um)), 
+        tostring(SqlValue.decimal(stock_val))
+    ))
 end
 
--- D. Recetas (Relación N:M, usa las FKs asumidas)
+-- D. Recetas
 for i = 1, 10, 1 do
-    local ing_id = rand_num(1, 8)
-    table.insert(recetas_vals, string.format("(%d, %d, %s)", i, ing_id, rand_float(0.05, 0.5)))
+    local prod_id = SqlValue.integer(i)
+    local ing_id  = SqlValue.integer(rand_num(1, 8))
+    local cant_req = SqlValue.decimal(0.05 + math.random() * (0.5 - 0.05))
+    table.insert(recetas_vals, string.format("(%s, %s, %s)", tostring(prod_id), tostring(ing_id), tostring(cant_req)))
 end
 
--- E. Clientes y Repartidores (Sin hardcodear id_cliente ni id_repartidor)
+-- E. Clientes y Repartidores
 for i = 1, 8, 1 do
     local nom_cli = string.format("%s %s", rand_elt(nombres_personas), rand_elt(apellidos))
     local dir = string.format("%s %d", rand_elt(calles), rand_num(10, 999))
-    table.insert(clientes_vals, string.format("('%s', '%s', '%s')", nom_cli, rand_tel(), dir))
+    
+    -- Añadidas comillas simples para nombre, teléfono y dirección
+    table.insert(clientes_vals, string.format("('%s', '%s', '%s')", 
+        tostring(SqlValue.string(nom_cli)), 
+        tostring(SqlValue.string(string.format("555%07d", math.random(0, 9999999)))), 
+        tostring(SqlValue.string(dir))
+    ))
 
     local nom_rep = string.format("%s %s", rand_elt(nombres_personas), rand_elt(apellidos))
-    table.insert(repartidores_vals, string.format("('%s', '%s', %s)", nom_rep, rand_tel(), rand_elt(vehiculos)))
+    
+    -- Añadidas comillas simples para nombre, teléfono y vehículo (quitando las comillas del arreglo original de vehiculos si las tenía)
+    table.insert(repartidores_vals, string.format("('%s', '%s', '%s')", 
+        tostring(SqlValue.string(nom_rep)), 
+        tostring(SqlValue.string(string.format("555%07d", math.random(0, 9999999)))), 
+        tostring(SqlValue.string(rand_elt(vehiculos)))
+    ))
 end
 
--- F. Pedidos y Detalle (Sin hardcodear id_pedido)
+-- F. Pedidos y Detalle
 for i = 1, 15, 1 do
-    local cli_id = rand_num(1, 8)
-    local rep_id = rand_num(1, 8)
-    local cant = rand_num(1, 3)
-    local prod_id = rand_num(1, 10)
-    local p_unit = rand_float(90, 200)
-    local total = string.format("%.2f", p_unit * cant)
+    local cli_id = SqlValue.integer(rand_num(1, 8))
+    local rep_id = SqlValue.integer(rand_num(1, 8))
+    local cant   = SqlValue.integer(rand_num(1, 3))
+    local prod_id= SqlValue.integer(rand_num(1, 10))
     
-    local f_hora = string.format("2026-08-%02d %02d:%02d:00", rand_num(1, 24), rand_num(10, 22), rand_num(0, 59))
+    local p_unit_val = 90 + math.random() * (200 - 90)
+    local v_p_unit   = SqlValue.decimal(p_unit_val)
     
+    local total_val  = p_unit_val * cant:tonumber() 
+    local v_total    = SqlValue.decimal(total_val)
+    
+    local f_hora_str = string.format("2026-08-%02d %02d:%02d:00", rand_num(1, 24), rand_num(10, 22), rand_num(0, 59))
+    local v_datetime = SqlValue.datetime(f_hora_str)
+    
+    -- Nota: aseguramos comillas para plataforma y estado (si en tu arreglo ya tenían comillas, puedes ajustar o dejarlas limpias aquí)
     table.insert(
         pedidos_vals,
-        string.format(
-            "(%d, %d, %s, '%s', %s, %s)",
-            cli_id, rep_id, rand_elt(plataformas), f_hora, rand_elt(estados), total
+        string.format("(%s, %s, '%s', '%s', '%s', %s)",
+            tostring(cli_id), tostring(rep_id), rand_elt(plataformas), tostring(v_datetime), rand_elt(estados), tostring(v_total)
         )
     )
         
-    table.insert(detalle_vals, string.format("(%d, %d, %d, %s)", i, prod_id, cant, p_unit))
+    table.insert(detalle_vals, string.format("(%s, %s, %s, %s)", 
+        tostring(SqlValue.integer(i)), tostring(prod_id), tostring(cant), tostring(v_p_unit)
+    ))
 end
 
 -- Ensamblar script DML final con control de FKs
@@ -237,12 +271,11 @@ local dml_inserts = string.format([[
     table.concat(detalle_vals, ",")
 )
 
--- Ejecución en MariaDB
 local ok, err = db:multi_query(dml_inserts)
 if not ok then
     error("[ERROR] Al insertar datos aleatorios: " .. tostring(err))
 end
-print("[INFO] Datos semilla aleatorios insertados correctamente.")
+print("[INFO] Datos semilla aleatorios insertados correctamente usando SqlValue.")
 
 -- 5. Consulta de verificación
 print("\n--- RESUMEN DE PRODUCTOS POR MARCA ---")
@@ -251,5 +284,13 @@ local res = db:query("SELECT * FROM productos;")--[=[db:multi_query([[
     FROM productos p 
     JOIN marcas m ON p.id_marca = m.id_marca;
 ]])]=]
-
 system.print(res)
+db:close()
+
+--[[
+ALTER USER 'lua_client'@'localhost' IDENTIFIED VIA mysql_native_password USING PASSWORD('12345');
+CREATE USER IF NOT EXISTS 'lua_client'@'127.0.0.1' IDENTIFIED VIA mysql_native_password USING PASSWORD('12345');
+GRANT ALL PRIVILEGES ON *.* TO 'lua_client'@'127.0.0.1' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+EXIT;
+]]

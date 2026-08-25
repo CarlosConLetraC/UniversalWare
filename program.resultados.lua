@@ -1,7 +1,5 @@
 import("cmariadb", "system")
 
--- 1. Conexión a la base de datos existente
--- local db, err = cmariadb.connect("localhost", "root", "12345", "dark_kitchen_db", 3306)
 local db, err = cmariadb.connect({
     host = "127.0.0.1",
     user = "lua_client",
@@ -11,11 +9,11 @@ local db, err = cmariadb.connect({
 if not db then
     error("[ERROR] No se pudo conectar a MariaDB: " .. tostring(err))
 end
+
 print("==================================================")
-print("   DARK KITCHEN - SISTEMA DE REPORTE ANALÍTICO    ")
+print("   DARK KITCHEN - REPORTE ANALÍTICO (SqlValue)    ")
 print("==================================================\n")
 
--- Helper para formatear encabezados de reportes
 local function imprimir_encabezado(titulo)
     print("\n--------------------------------------------------")
     print(" " .. string.upper(titulo))
@@ -24,7 +22,7 @@ end
 
 -- REPORTE 1: Ventas e ingresos totales por Plataforma
 imprimir_encabezado("1. Rendimiento de Ventas por Plataforma")
-local q1 = [[
+local res1, err1 = db:query([[
     SELECT 
         plataforma_origen,
         COUNT(id_pedido) AS total_pedidos,
@@ -34,17 +32,13 @@ local q1 = [[
     WHERE estado != 'Cancelado'
     GROUP BY plataforma_origen
     ORDER BY ingresos_totales DESC;
-]]
-local res1, err1 = db:query(q1)
-if res1 then
-    system.print(res1)
-else
-    print("[ERROR] Consulta 1 falló: " .. tostring(err1))
-end
+]])
+
+if res1 then system.print(res1) else print("[ERROR] " .. tostring(err1)) end
 
 -- REPORTE 2: Top Productos Más Vendidos
 imprimir_encabezado("2. Top 5 Productos Más Vendidos")
-local q2 = [[
+local res2, err2 = db:query([[
     SELECT 
         p.nombre AS producto,
         m.nombre AS marca,
@@ -56,17 +50,13 @@ local q2 = [[
     GROUP BY p.id_producto, p.nombre, m.nombre
     ORDER BY unidades_vendidas DESC
     LIMIT 5;
-]]
-local res2, err2 = db:query(q2)
-if res2 then
-    system.print(res2)
-else
-    print("[ERROR] Consulta 2 falló: " .. tostring(err2))
-end
+]])
+
+if res2 then system.print(res2) else print("[ERROR] " .. tostring(err2)) end
 
 -- REPORTE 3: Alerta de Reabastecimiento de Stock
 imprimir_encabezado("3. Alerta de Insumos Críticos (Stock <= Stock Mínimo)")
-local q3 = [[
+local res3, err3 = db:query([[
     SELECT 
         id_ingrediente,
         nombre AS ingrediente,
@@ -81,21 +71,21 @@ local q3 = [[
     FROM ingredientes
     WHERE stock_actual <= stock_minimo
     ORDER BY stock_actual ASC;
-]]
-local res3, err3 = db:query(q3)
+]])
+
 if res3 then
     if #res3 == 0 then
-        print("[OK] Todos los insumos cuentan con stock suficiente por encima del mínimo.")
+        print("[OK] Todos los insumos cuentan con stock suficiente.")
     else
         system.print(res3)
     end
 else
-    print("[ERROR] Consulta 3 falló: " .. tostring(err3))
+    print("[ERROR] " .. tostring(err3))
 end
 
 -- REPORTE 4: Eficiencia de Repartidores
 imprimir_encabezado("4. Resumen de Entregas por Repartidor")
-local q4 = [[
+local res4, err4 = db:query([[
     SELECT 
         r.nombre AS repartidor,
         r.vehiculo,
@@ -105,14 +95,12 @@ local q4 = [[
     LEFT JOIN pedidos p ON r.id_repartidor = p.id_repartidor
     GROUP BY r.id_repartidor, r.nombre, r.vehiculo
     ORDER BY pedidos_entregados DESC;
-]]
-local res4, err4 = db:query(q4)
-if res4 then
-    system.print(res4)
-else
-    print("[ERROR] Consulta 4 falló: " .. tostring(err4))
-end
+]])
+
+if res4 then system.print(res4) else print("[ERROR] " .. tostring(err4)) end
 
 print("\n==================================================")
 print("         FIN DEL REPORTE DE OPERACIONES           ")
 print("==================================================")
+
+db:close()
