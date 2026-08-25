@@ -151,6 +151,9 @@ void register_sqlvalue_meta(lua_State *L) {
     lua_pushcfunction(L, sqlvalue_type);
     lua_setfield(L, -2, "type");
 
+    lua_pushcfunction(L, sqlvalue_tostring);
+    lua_setfield(L, -2, "tostring");
+
     // Configuración del __index apuntando a la propia metatabla 
     // para que LuaJIT sepa dónde buscar las funciones anteriores cuando se invoquen con ':'
     lua_pushvalue(L, -1);
