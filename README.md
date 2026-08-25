@@ -88,7 +88,7 @@ UniversalWare/
 ├── build.sh                  # Script de compilación de módulos C/C++ y librerías dinámicas
 ├── clibs/                    # Código fuente C de librerías nativas
 │   ├── cjob/                 # Gestor/programador nativo de tareas (cjob.h, job.c, scheduler.c)
-│   ├── cmariadb/             # Driver cliente MariaDB (clientmodes.h, datatypes.h, main.c)
+│   ├── cmariadb/             # Driver cliente MariaDB (clientmodes.h, datatypes.h, datatypes.c, main.c)
 │   └── cstats.c              # Módulo C de cálculo estadístico
 ├── cmd                       # CLI para evaluar sentencias Lua directas
 ├── configurarentorno.sh      # Preparación de dependencias y venv
