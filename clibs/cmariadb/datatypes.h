@@ -44,35 +44,35 @@
 
     // --- MACROS CONSTRUCTORAS AMPLIADAS ---
     // Numéricos
-    #define l_sqlvalue_tiny(L)     (l_sqlvalue_create_impl((L), MYSQL_TYPE_TINY, 1))
-    #define l_sqlvalue_small(L)    (l_sqlvalue_create_impl((L), MYSQL_TYPE_SHORT, 1))
-    #define l_sqlvalue_medium(L)   (l_sqlvalue_create_impl((L), MYSQL_TYPE_INT24, 1))
-    #define l_sqlvalue_integer(L)  (l_sqlvalue_create_impl((L), MYSQL_TYPE_LONG, 1))
-    #define l_sqlvalue_bigint(L)   (l_sqlvalue_create_impl((L), MYSQL_TYPE_LONGLONG, 1))
-    #define l_sqlvalue_year(L)     (l_sqlvalue_create_impl((L), MYSQL_TYPE_YEAR, 1))
-    #define l_sqlvalue_bit(L)      (l_sqlvalue_create_impl((L), MYSQL_TYPE_BIT, 1))
-    #define l_sqlvalue_bool(L)     (l_sqlvalue_create_impl((L), MYSQL_TYPE_BOOL, 1))
+    #define l_sqlvalue_tiny(L)      (l_sqlvalue_create_impl((L), MYSQL_TYPE_TINY, 1))
+    #define l_sqlvalue_small(L)     (l_sqlvalue_create_impl((L), MYSQL_TYPE_SHORT, 1))
+    #define l_sqlvalue_medium(L)    (l_sqlvalue_create_impl((L), MYSQL_TYPE_INT24, 1))
+    #define l_sqlvalue_integer(L)   (l_sqlvalue_create_impl((L), MYSQL_TYPE_LONG, 1))
+    #define l_sqlvalue_bigint(L)    (l_sqlvalue_create_impl((L), MYSQL_TYPE_LONGLONG, 1))
+    #define l_sqlvalue_year(L)      (l_sqlvalue_create_impl((L), MYSQL_TYPE_YEAR, 1))
+    #define l_sqlvalue_bit(L)       (l_sqlvalue_create_impl((L), MYSQL_TYPE_BIT, 1))
+    #define l_sqlvalue_bool(L)      (l_sqlvalue_create_impl((L), MYSQL_TYPE_BOOL, 1))
 
     // Decimales y Flotantes
-    #define l_sqlvalue_float(L)    (l_sqlvalue_create_impl((L), MYSQL_TYPE_FLOAT, 0))
-    #define l_sqlvalue_double(L)   (l_sqlvalue_create_impl((L), MYSQL_TYPE_DOUBLE, 0))
-    #define l_sqlvalue_decimal(L)  (l_sqlvalue_create_impl((L), MYSQL_TYPE_NEWDECIMAL, 0))
+    #define l_sqlvalue_float(L)     (l_sqlvalue_create_impl((L), MYSQL_TYPE_FLOAT, 0))
+    #define l_sqlvalue_double(L)    (l_sqlvalue_create_impl((L), MYSQL_TYPE_DOUBLE, 0))
+    #define l_sqlvalue_decimal(L)   (l_sqlvalue_create_impl((L), MYSQL_TYPE_NEWDECIMAL, 0))
 
     // Cadenas, Textos y JSON
-    #define l_sqlvalue_string(L)   (l_sqlvalue_create_impl((L), MYSQL_TYPE_VAR_STRING, 0))
-    #define l_sqlvalue_json(L)     (l_sqlvalue_create_impl((L), MYSQL_TYPE_JSON, 0))
-    #define l_sqlvalue_enum(L)     (l_sqlvalue_create_impl((L), MYSQL_TYPE_ENUM, 0))
-    #define l_sqlvalue_set(L)      (l_sqlvalue_create_impl((L), MYSQL_TYPE_SET, 0))
+    #define l_sqlvalue_string(L)    (l_sqlvalue_create_impl((L), MYSQL_TYPE_VAR_STRING, 0))
+    #define l_sqlvalue_json(L)      (l_sqlvalue_create_impl((L), MYSQL_TYPE_JSON, 0))
+    #define l_sqlvalue_enum(L)      (l_sqlvalue_create_impl((L), MYSQL_TYPE_ENUM, 0))
+    #define l_sqlvalue_set(L)       (l_sqlvalue_create_impl((L), MYSQL_TYPE_SET, 0))
 
     // Fechas y Horas
-    #define l_sqlvalue_date(L)     (l_sqlvalue_create_impl((L), MYSQL_TYPE_DATE, 0))
-    #define l_sqlvalue_datetime(L) (l_sqlvalue_create_impl((L), MYSQL_TYPE_DATETIME, 0))
-    #define l_sqlvalue_time(L)     (l_sqlvalue_create_impl((L), MYSQL_TYPE_TIME, 0))
-    #define l_sqlvalue_timestamp(L)(l_sqlvalue_create_impl((L), MYSQL_TYPE_TIMESTAMP, 0))
+    #define l_sqlvalue_date(L)      (l_sqlvalue_create_impl((L), MYSQL_TYPE_DATE, 0))
+    #define l_sqlvalue_datetime(L)  (l_sqlvalue_create_impl((L), MYSQL_TYPE_DATETIME, 0))
+    #define l_sqlvalue_time(L)      (l_sqlvalue_create_impl((L), MYSQL_TYPE_TIME, 0))
+    #define l_sqlvalue_timestamp(L) (l_sqlvalue_create_impl((L), MYSQL_TYPE_TIMESTAMP, 0))
 
     // Binarios, Blobs y Geometría
-    #define l_sqlvalue_blob(L)     (l_sqlvalue_create_impl((L), MYSQL_TYPE_LONG_BLOB, 0))
-    #define l_sqlvalue_geometry(L) (l_sqlvalue_create_impl((L), MYSQL_TYPE_GEOMETRY, 0))
+    #define l_sqlvalue_blob(L)      (l_sqlvalue_create_impl((L), MYSQL_TYPE_LONG_BLOB, 0))
+    #define l_sqlvalue_geometry(L)  (l_sqlvalue_create_impl((L), MYSQL_TYPE_GEOMETRY, 0))
 
     // Registro y Deserialización
     void register_sqlvalue_meta(lua_State *L);
