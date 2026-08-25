@@ -64,7 +64,7 @@ static int sqlvalue_gc(lua_State *L) {
 
 // 2. Metamétodo __tostring (Devuelve cadenas formateadas para la consulta SQL o representación)
 static int sqlvalue_tostring(lua_State *L) {
-    SqlValue *v = (SqlValue *)luaL_checkudata(L, 1, SQLVALUE_META);
+    SqlValue *v = check_sql_value(L, 1);
     if (v->is_null) {
         lua_pushstring(L, "NULL");
         return 1;
@@ -118,7 +118,7 @@ static int sqlvalue_tostring(lua_State *L) {
 
 // 3. Método tonumber()
 static int sqlvalue_tonumber(lua_State *L) {
-    SqlValue *v = (SqlValue *)luaL_checkudata(L, 1, SQLVALUE_META);
+    SqlValue *v = check_sql_value(L, 1);
     if (v->is_null) {
         lua_pushnil(L);
         return 1;
@@ -152,7 +152,7 @@ static int sqlvalue_tonumber(lua_State *L) {
 
 // 4. Método type() (Mapeo completo de los tipos de MariaDB)
 static int sqlvalue_type(lua_State *L) {
-    SqlValue *v = (SqlValue *)luaL_checkudata(L, 1, SQLVALUE_META);
+    SqlValue *v = check_sql_value(L, 1);
     switch (v->sql_type) {
         case MYSQL_TYPE_DECIMAL:
         case MYSQL_TYPE_NEWDECIMAL:
@@ -232,7 +232,7 @@ static int sqlvalue_type(lua_State *L) {
 
 // Método unificado de extracción de valor polimórfico (Estático y privado al módulo)
 static int sqlvalue_value(lua_State *L) {
-    SqlValue *v = (SqlValue *)luaL_checkudata(L, 1, SQLVALUE_META);
+    SqlValue *v = check_sql_value(L, 1);
     if (v->is_null) {
         lua_pushnil(L);
         return 1;
@@ -294,7 +294,7 @@ static int sqlvalue_value(lua_State *L) {
 
 /* Método de instancia para decodificar geometría espacial en Lua */
 static int sqlvalue_get_geometry(lua_State *L) {
-    SqlValue *v = (SqlValue *)luaL_checkudata(L, 1, SQLVALUE_META);
+    SqlValue *v = check_sql_value(L, 1);
     if (v->is_null || v->sql_type != MYSQL_TYPE_GEOMETRY) {
         lua_pushnil(L);
         return 1;
@@ -816,7 +816,8 @@ int parse_wkt_to_geometry(const char *wkt_str, MariaDBGeometry *geom) {
     geom->byte_order = 1; /* Little-Endian */
     
     // Omitir espacios iniciales
-    while (*wkt_str && isspace((unsigned char)*wkt_str)) wkt_str++;
+    // while (*wkt_str && isspace((unsigned char)*wkt_str)) wkt_str++;
+    for (; *wkt_str && isspace((unsigned char)*wkt_str); wkt_str++);
 
     if (strncmp(wkt_str, "POINT", 5) == 0) {
         geom->type = GEOM_TYPE_POINT;
@@ -848,7 +849,8 @@ int parse_wkt_to_geometry(const char *wkt_str, MariaDBGeometry *geom) {
         init_point_list(&plist);
 
         while (*p && *p != ')') {
-            while (*p && (isspace((unsigned char)*p) || *p == ',' || *p == '(')) p++;
+            // while (*p && (isspace((unsigned char)*p) || *p == ',' || *p == '(')) p++;
+            for(; *p && (isspace((unsigned char)*p) || *p == ',' || *p == '('); p++);
             if (*p == ')' || !*p) break;
 
             char *endptr;
@@ -856,7 +858,8 @@ int parse_wkt_to_geometry(const char *wkt_str, MariaDBGeometry *geom) {
             if (p == endptr) { free_point_list(&plist); return -1; }
             p = endptr;
 
-            while (*p && isspace((unsigned char)*p)) p++;
+            // while (*p && isspace((unsigned char)*p)) p++;
+            for (; *p && isspace((unsigned char)*p); p++);
             double y = strtod(p, &endptr);
             if (p == endptr) { free_point_list(&plist); return -1; }
             p = endptr;
@@ -899,14 +902,16 @@ int parse_wkt_to_geometry(const char *wkt_str, MariaDBGeometry *geom) {
         Ring *rings = malloc(ring_cap * sizeof(Ring));
 
         while (*p && *p != ')') {
-            while (*p && (*p == '(' || isspace((unsigned char)*p) || *p == ',')) p++;
+            // while (*p && (*p == '(' || isspace((unsigned char)*p) || *p == ',')) p++;
+            for(; *p && (*p == '(' || isspace((unsigned char)*p) || *p == ','); p++);
             if (*p == ')' || !*p) break;
 
             WKTPointList plist;
             init_point_list(&plist);
 
             while (*p && *p != ')') {
-                while (*p && (isspace((unsigned char)*p) || *p == ',' || *p == '(')) p++;
+                // while (*p && (isspace((unsigned char)*p) || *p == ',' || *p == '(')) p++;
+                for (; *p && (isspace((unsigned char)*p) || *p == ',' || *p == '('); p++);
                 if (*p == ')' || !*p) break;
 
                 char *endptr;
@@ -914,14 +919,16 @@ int parse_wkt_to_geometry(const char *wkt_str, MariaDBGeometry *geom) {
                 if (p == endptr) break;
                 p = endptr;
 
-                while (*p && isspace((unsigned char)*p)) p++;
+                // while (*p && isspace((unsigned char)*p)) p++;
+                for(; *p && isspace((unsigned char)*p); p++);
                 double y = strtod(p, &endptr);
                 if (p == endptr) break;
                 p = endptr;
 
                 add_point(&plist, x, y);
             }
-            while (*p && (*p == ')' || *p == ',' || isspace((unsigned char)*p))) p++;
+            // while (*p && (*p == ')' || *p == ',' || isspace((unsigned char)*p))) p++;
+            for (; *p && (*p == ')' || *p == ',' || isspace((unsigned char)*p)); p++);
 
             if (ring_count >= ring_cap) {
                 ring_cap *= 2;
@@ -932,9 +939,8 @@ int parse_wkt_to_geometry(const char *wkt_str, MariaDBGeometry *geom) {
 
         // Calcular tamaño total: 4 bytes (numRings) + por cada anillo: [4 bytes (numPoints) + puntos]
         size_t total_len = 4;
-        for (size_t i = 0; i < ring_count; i++) {
+        for (size_t i = 0; i < ring_count; i++)
             total_len += 4 + (rings[i].count * 16);
-        }
 
         geom->coordinate_len = total_len;
         geom->coordinates = malloc(total_len);
@@ -967,7 +973,8 @@ int parse_wkt_to_geometry(const char *wkt_str, MariaDBGeometry *geom) {
         if (!p) return -1;
         p++;
 
-        size_t sub_cap = 4, sub_count = 0;
+        size_t sub_cap = 4,
+               sub_count = 0;
         SubGeom *sub_geoms = malloc(sub_cap * sizeof(SubGeom));
 
         // Analizar cada sub-geometría separada por comas dentro del contenedor
@@ -1126,9 +1133,8 @@ int wrap_sqlvalue_geometry(lua_State *L) {
 
     // Guardamos los datos en crudo (sea WKT plano o binario)
     unsigned char *blob = (unsigned char *)malloc(len);
-    if (!blob) {
+    if (!blob)
         return luaL_error(L, "Memoria insuficiente para geometry()");
-    }
     memcpy(blob, data, len);
     
     v->data.blob_val.ptr = blob;
