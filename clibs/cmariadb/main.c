@@ -11,8 +11,6 @@
 #include "datatypes.h"
 #include "clientmodes.h"
 
-#define MARIADB_LUA_METATABLE "MariaDB.Connection"
-
 // 1. Conexión a MariaDB
 static int l_connect(lua_State *L) {
     const char *host = NULL,
@@ -248,7 +246,7 @@ static const struct luaL_Reg db_methods[] = {
     {NULL, NULL}
 };
 
-// 5. Punto de entrada principal
+// 5. Punto de entrada principal ampliado con cobertura total de tipos
 int luaopen_cmariadb(lua_State *L) {
     register_sqlvalue_meta(L);
 
@@ -271,22 +269,39 @@ int luaopen_cmariadb(lua_State *L) {
     lua_pushinteger(L, MARIADB_CLIENT_MULTI_STATEMENTS); lua_setfield(L, -2, "MULTI_STATEMENTS");
     lua_setfield(L, -2, "CLIENT_MODE");
 
-    // SqlValue factory subtable
+    // SqlValue factory subtable (Ampliación completa)
     lua_newtable(L);
-    lua_pushcfunction(L, wrap_sqlvalue_float);    lua_setfield(L, -2, "float");
-    lua_pushcfunction(L, wrap_sqlvalue_double);   lua_setfield(L, -2, "double");
-    lua_pushcfunction(L, wrap_sqlvalue_decimal);  lua_setfield(L, -2, "decimal");
-    lua_pushcfunction(L, wrap_sqlvalue_integer);  lua_setfield(L, -2, "integer");
-    lua_pushcfunction(L, wrap_sqlvalue_bigint);   lua_setfield(L, -2, "bigint");
+    // Numéricos
     lua_pushcfunction(L, wrap_sqlvalue_tiny);     lua_setfield(L, -2, "tinyint");
     lua_pushcfunction(L, wrap_sqlvalue_small);    lua_setfield(L, -2, "smallint");
     lua_pushcfunction(L, wrap_sqlvalue_medium);   lua_setfield(L, -2, "mediumint");
+    lua_pushcfunction(L, wrap_sqlvalue_integer);  lua_setfield(L, -2, "integer");
+    lua_pushcfunction(L, wrap_sqlvalue_bigint);   lua_setfield(L, -2, "bigint");
     lua_pushcfunction(L, wrap_sqlvalue_year);     lua_setfield(L, -2, "year");
+    lua_pushcfunction(L, wrap_sqlvalue_bit);      lua_setfield(L, -2, "bit");
+    lua_pushcfunction(L, wrap_sqlvalue_bool);     lua_setfield(L, -2, "boolean");
+
+    // Decimales y Flotantes
+    lua_pushcfunction(L, wrap_sqlvalue_float);    lua_setfield(L, -2, "float");
+    lua_pushcfunction(L, wrap_sqlvalue_double);   lua_setfield(L, -2, "double");
+    lua_pushcfunction(L, wrap_sqlvalue_decimal);  lua_setfield(L, -2, "decimal");
+
+    // Cadenas, Textos y Estructuras Especiales
     lua_pushcfunction(L, wrap_sqlvalue_string);   lua_setfield(L, -2, "string");
+    lua_pushcfunction(L, wrap_sqlvalue_json);     lua_setfield(L, -2, "json");
+    lua_pushcfunction(L, wrap_sqlvalue_enum);     lua_setfield(L, -2, "enum");
+    lua_pushcfunction(L, wrap_sqlvalue_set);      lua_setfield(L, -2, "set");
+
+    // Fechas y Horas Temporales
     lua_pushcfunction(L, wrap_sqlvalue_date);     lua_setfield(L, -2, "date");
     lua_pushcfunction(L, wrap_sqlvalue_datetime); lua_setfield(L, -2, "datetime");
     lua_pushcfunction(L, wrap_sqlvalue_time);     lua_setfield(L, -2, "time");
+    lua_pushcfunction(L, wrap_sqlvalue_timestamp);lua_setfield(L, -2, "timestamp");
+
+    // Binarios, Blobs y Geometría Espacial
     lua_pushcfunction(L, wrap_sqlvalue_blob);     lua_setfield(L, -2, "blob");
+    lua_pushcfunction(L, wrap_sqlvalue_geometry); lua_setfield(L, -2, "geometry");
+
     lua_setfield(L, -2, "SqlValue");
 
     return 1;
