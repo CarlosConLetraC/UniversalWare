@@ -11,7 +11,7 @@ if not db then
 end
 
 print("==================================================")
-print("   DARK KITCHEN - REPORTE ANALÍTICO (SqlValue)    ")
+print("   DARK KITCHEN - REPORTE ANALÍTICO")
 print("==================================================\n")
 
 local function imprimir_encabezado(titulo)
@@ -34,7 +34,11 @@ local res1, err1 = db:query([[
     ORDER BY ingresos_totales DESC;
 ]])
 
-if res1 then system.print(res1) else print("[ERROR] " .. tostring(err1)) end
+if res1 then
+    system.print(res1)
+else
+    print("[ERROR] " .. tostring(err1))
+end
 
 -- REPORTE 2: Top Productos Más Vendidos
 imprimir_encabezado("2. Top 5 Productos Más Vendidos")
@@ -52,7 +56,11 @@ local res2, err2 = db:query([[
     LIMIT 5;
 ]])
 
-if res2 then system.print(res2) else print("[ERROR] " .. tostring(err2)) end
+if res2 then
+    system.print(res2)
+else
+    print("[ERROR] " .. tostring(err2))
+end
 
 -- REPORTE 3: Alerta de Reabastecimiento de Stock
 imprimir_encabezado("3. Alerta de Insumos Críticos (Stock <= Stock Mínimo)")
@@ -97,7 +105,11 @@ local res4, err4 = db:query([[
     ORDER BY pedidos_entregados DESC;
 ]])
 
-if res4 then system.print(res4) else print("[ERROR] " .. tostring(err4)) end
+if res4 then
+    system.print(res4)
+else
+    print("[ERROR] " .. tostring(err4))
+end
 
 print("\n==================================================")
 print("         FIN DEL REPORTE DE OPERACIONES           ")
