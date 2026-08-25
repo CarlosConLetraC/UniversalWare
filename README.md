@@ -105,13 +105,7 @@ UniversalWare/
 │   ├── Lista.lua / Nodo.lua
 │   ├── EasingModes.lua / Enum/ (EaseMode, Faces, FaceType, Shape, StyleMode)
 │   ├── sublibs/               # Tipos vectoriales secundarios (Color3, Vector2, Vector3)
-│   ├── Linux/                # Binarios dinámicos compilados (.so) para Linux
-│   │   ├── cjob.so
-│   │   ├── cmariadb.so
-│   │   ├── cml.so
-│   │   ├── cstats.so
-│   │   ├── csvfast.so
-│   │   ├── ssh.so
+│   ├── Linux/                # Binarios dinámicos compilados (*.so) para Linux
 │   │   └── nada.lua
 │   └── Windows/              # Mapeo de compatibilidad para plataformas Windows
 │       └── nada.lua
