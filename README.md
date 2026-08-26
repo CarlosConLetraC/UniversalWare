@@ -77,6 +77,7 @@ El repositorio incluye un caso de estudio enfocado en la gestión integral de un
  └────────────────────────────────────────────────────────────────────────┘
 ```
 
+```mermaid
 flowchart TD
     subgraph Orq ["CAPA DE ORQUESTACIÓN Y CLI"]
         direction LR
@@ -110,6 +111,7 @@ flowchart TD
     Orq --> Runtime
     Runtime --> Core
     Core --> Persist
+```
 
 ---
 
