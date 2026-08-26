@@ -1,7 +1,7 @@
 local Color3 = ({...})[1]
-local effil = effil or import("effil")
+--local effil = effil or import("effil")
 local Table = Table or import("Table")
-local typeof = typeof or effil.G.typeof
+--local typeof = typeof effil.G.typeof
 local gmt, smt = debug.getmetatable or getmetatable, debug.setmetatable or setmetatable
 local append = {}
 local mt = {__metatable = "locked", __value = 0, __subindex = {}, __type = "Color3"}

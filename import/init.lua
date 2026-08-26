@@ -4,14 +4,14 @@ g._PROMPT2 = "... "
 
 if jit and jit.os ~= "Windows" or os.getenv("HOME") then
 	g.os_version = "Linux"
-	package.path = package.path .. ";./import/?.lua"
+	package.path = package.path .. ";./import/?.lua;./import/?/init.lua"
 	package.cpath = package.cpath .. ";./import/Linux/?.so"
 	
 	package.path = package.path .. ";/usr/share/lua/".. string.sub(_VERSION, 5) .."/?.lua"
 	package.path = package.path .. ";/usr/local/share/lua/".. string.sub(_VERSION, 5) .."/?.lua"	
 elseif not os.getenv("HOME") then
 	g.os_version = "Windows"
-	package.path = package.path .. ";.\\import\\?.lua"
+	package.path = package.path .. ";.\\import\\?.lua;.\\import\\?\\init.lua"
 	package.cpath = package.cpath .. ";.\\import\\Windows\\?.dll"
 end
 
