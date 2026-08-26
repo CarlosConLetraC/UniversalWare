@@ -78,85 +78,39 @@ El repositorio incluye un caso de estudio enfocado en la gestión integral de un
 ```
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#333', 'lineColor': '#666', 'tertiaryColor': '#fff'}}}%%
-%% Este diagrama usa HTML complejo dentro de los nodos para mantener la estructura visual del esquema de texto.
+flowchart LR
+    subgraph Orq ["1. ORQUESTACIÓN Y CLI"]
+        direction TB
+        run["run.sh"]
+        backend["backend.cpp"]
+        init["initconsole"]
+        cmd["cmd"]
+    end
 
-graph TD
-    %% Nivel 1: Orquestación
-    classDef capaPrincipal fill:#f0f0f0,stroke:#333,stroke-width:2px,rx:10,ry:10;
-    classDef nodo fill:#fff,stroke:#666,stroke-width:1px,rx:5,ry:5,text-align:left;
-    classDef conector fill:none,stroke:none,width:0px,height:0px;
+    subgraph Runtime ["2. RUNTIME"]
+        direction TB
+        lua["runclient / LuaJIT"]
+        main["program.main.lua"]
+        lua --> main
+    end
 
-    OrqCap("<b>CAPA DE ORQUESTACIÓN Y CLI</b><br/><br/>
-    <div style='display:flex; justify-content:space-around; gap:10px;'>
-        <div style='border:1px solid #666; padding:5px; border-radius:5px;'>run.sh</div>
-        <div style='border:1px solid #666; padding:5px; border-radius:5px;'>backend.cpp</div>
-        <div style='border:1px solid #666; padding:5px; border-radius:5px;'>initconsole</div>
-        <div style='border:1px solid #666; padding:5px; border-radius:5px;'>cmd</div>
-    </div>"):::capaPrincipal
+    subgraph Core ["3. NÚCLEO NATIVO"]
+        direction TB
+        so["import/Linux/ (*.so)<br>• cmariadb.so<br>• cjob.so / cml.so<br>• csvfast.so / stats"]
+        clibs["clibs/ & cpplibs/<br>(C/C++ Source)"]
+        libbk["libbackend/<br>(ThreadPool, Scheduler, Broker, Worker)"]
+    end
 
-    %% Conectores intermedios invisibles para guiar las líneas
-    P1o1:::conector
-    P1o2:::conector
-    P1o3:::conector
-    P1o4:::conector
+    subgraph Persist ["4. PERSISTENCIA"]
+        direction TB
+        db[("MariaDB / MySQL")]
+        files["data/ (*.json)"]
+    end
 
-    OrqCap ==> P1o1
-    OrqCap ==> P1o2
-    OrqCap ==> P1o3
-    OrqCap ==> P1o4
-
-    %% Nivel 2: Runtime
-    RunCap("<b>CAPA DE EJECUCIÓN (RUNTIME)</b><br/><br/>
-    <div style='border:1px solid #666; padding:5px; border-radius:5px; width: 80%; margin: 0 auto;'>runclient / LuaJIT</div>
-    <br/>
-    <div style='border:1px solid #666; padding:5px; border-radius:5px; width: 50%; margin: 0 auto;'>program.main.lua</div>"):::capaPrincipal
-
-    P1o1 -.-> RunCap
-    P1o2 -.-> RunCap
-    P1o3 -.-> RunCap
-    P1o4 -.-> RunCap
-
-    P2o1:::conector
-    RunCap ==> P2o1
-
-    %% Nivel 3: Núcleo Nativo
-    CoreCap("<b>CAPA DE NÚCLEO NATIVO (C/C++)</b><br/><br/>
-    <div style='display:flex; justify-content:space-around; gap:10px;'>
-        <div style='border:1px solid #666; padding:5px; border-radius:5px; text-align:left;'>
-            import/Linux/ (*.so)<br/>
-            ├── cmariadb.so<br/>
-            ├── cjob.so / cml.so<br/>
-            └── csvfast.so / stats
-        </div>
-        <div style='border:1px solid #666; padding:5px; border-radius:5px; text-align:left;'>
-            clibs/ & cpplibs/<br/>
-            (C/C++ Source)
-        </div>
-        <div style='border:1px solid #666; padding:5px; border-radius:5px; text-align:left;'>
-            libbackend/<br/>
-            (ThreadPool, Scheduler,<br/>
-            Broker, Worker)
-        </div>
-    </div>"):::capaPrincipal
-
-    P2o1 -.-> CoreCap
-
-    P3o1:::conector
-    CoreCap ==> P3o1
-
-    %% Nivel 4: Persistencia
-    PersCap("<b>PERSISTENCIA Y CONFIGURACIÓN</b><br/><br/>
-    <div style='display:flex; justify-content:space-around; gap:10px;'>
-        <div style='border:1px solid #666; padding:5px; border-radius:5px;'>MariaDB / MySQL</div>
-        <div style='border:1px solid #666; padding:5px; border-radius:5px;'>data/ (*.json)</div>
-    </div>"):::capaPrincipal
-
-    P3o1 -.-> PersCap
-
-    %% Estilo de las líneas
-    linkStyle 0,1,2,3,4,5,6,7 stroke:#333,stroke-width:2px,fill:none;
-    linkStyle 8 stroke:#333,stroke-width:2px,fill:none,stroke-dasharray: 5 5;
+    %% Flujo principal horizontal entre capas
+    Orq --> Runtime
+    Runtime --> Core
+    Core --> Persist
 ```
 
 ---
