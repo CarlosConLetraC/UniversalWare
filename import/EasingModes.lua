@@ -7,6 +7,8 @@ local math_cos = math.cos
 local math_sin = math.sin
 local math_pi = math.pi
 
+local bounce_out, bounce_inv
+
 EasingModes[Enum.StyleMode.Bounce] = {
 	[Enum.EaseMode.Out] = function(t)
 		local n1, d1 = 121/16, 11/4
@@ -22,23 +24,15 @@ EasingModes[Enum.StyleMode.Bounce] = {
 		t = t + (-21/8) / d1
 		return n1 * t * t + 63/64
 	end,
-
 	[Enum.EaseMode.In] = function(t)
-		local out = EasingModes[Enum.StyleMode.Bounce][Enum.EaseMode.Out]
-		return 1 - out(1 - t)
+		return 1 - bounce_out(1 - t)
 	end,
-
 	[Enum.EaseMode.InOut] = function(t)
-		local out = EasingModes[Enum.StyleMode.Bounce][Enum.EaseMode.Out]
-		local inv = EasingModes[Enum.StyleMode.Bounce][Enum.EaseMode.In]
-		return t < 0.5 and inv(t * 2) * 0.5 or out(t * 2 - 1) * 0.5 + 0.5
-		--if t < 0.5 then
-		--	return inv(t * 2) * 0.5
-		--else
-		--	return out(t * 2 - 1) * 0.5 + 0.5
-		--end
-	end,
+		return t < 0.5 and bounce_inv(t * 2) * 0.5 or bounce_out(t * 2 - 1) * 0.5 + 0.5
+	end
 }
+bounce_out = EasingModes[Enum.StyleMode.Bounce][Enum.EaseMode.Out]
+bounce_inv = EasingModes[Enum.StyleMode.Bounce][Enum.EaseMode.In]
 
 EasingModes[Enum.StyleMode.Cubic] = {
 	[Enum.EaseMode.In] = function(t)
@@ -58,7 +52,7 @@ EasingModes[Enum.StyleMode.Cubic] = {
 		--	local nt = 2 * t - 2
 		--	return 0.5 * nt^3 + 1
 		--end
-	end,
+	end
 }
 
 EasingModes[Enum.StyleMode.Exponential] = {
@@ -75,7 +69,7 @@ EasingModes[Enum.StyleMode.Exponential] = {
 			return 2^(20 * t - 10) / 2
 		end
 		return (2 - 2^(-20 * t + 10)) / 2
-	end,
+	end
 }
 
 EasingModes[Enum.StyleMode.Quad] = {
@@ -99,7 +93,7 @@ EasingModes[Enum.StyleMode.Sine] = {
 	end,
 	[Enum.EaseMode.InOut] = function(t)
 		return -(math_cos(math_pi * t) - 1) / 2
-	end,
+	end
 }
 
 return EasingModes

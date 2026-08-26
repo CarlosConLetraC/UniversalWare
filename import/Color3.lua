@@ -124,7 +124,7 @@ function Color3.fromHSV(h, s, v)
 	s = (type(s) == "number" and s) or 1
 	v = (type(v) == "number" and v) or 1
 
-	h = Math_clamp(h, 0, 180)/180
+	h = Math_clamp(h, 0, 360)/360
 	s = Math_clamp(s, 0, 1)
 	v = Math_clamp(v, 0, 1)
 	
