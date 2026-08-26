@@ -81,30 +81,30 @@ El repositorio incluye un caso de estudio enfocado en la gestión integral de un
 flowchart TD
     subgraph Orq ["CAPA DE ORQUESTACIÓN Y CLI"]
         direction LR
-        run[run.sh]
-        backend[backend.cpp]
-        init[initconsole]
-        cmd[cmd]
+        run["run.sh"]
+        backend["backend.cpp"]
+        init["initconsole"]
+        cmd["cmd"]
     end
 
     subgraph Runtime ["CAPA DE EJECUCIÓN (RUNTIME)"]
         direction TB
-        lua[runclient / LuaJIT]
-        main[program.main.lua]
+        lua["runclient / LuaJIT"]
+        main["program.main.lua"]
         lua --> main
     end
 
     subgraph Core ["CAPA DE NÚCLEO NATIVO (C/C++)"]
         direction LR
-        so["import/Linux/ (*.so)<br>• cmariadb.so<br>• cjob.so / cml.so<br>• csvfast.so / stats"]
-        clibs["clibs/ & cpplibs/<br>(C/C++ Source)"]
-        libbk["libbackend/<br>(ThreadPool, Scheduler, Broker, Worker)"]
+        so["import/Linux/ (*.so)<br/>• cmariadb.so<br/>• cjob.so / cml.so<br/>• csvfast.so / stats"]
+        clibs["clibs/ & cpplibs/<br/>(C/C++ Source)"]
+        libbk["libbackend/<br/>(ThreadPool, Scheduler, Broker, Worker)"]
     end
 
     subgraph Persist ["PERSISTENCIA Y CONFIGURACIÓN"]
         direction LR
-        db[(MariaDB / MySQL)]
-        files[data/ (*.json)]
+        db[("MariaDB / MySQL")]
+        files["data/ (*.json)"]
     end
 
     %% Conexiones entre capas
