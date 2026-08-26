@@ -10,9 +10,8 @@ SqlValue* check_sql_value(lua_State *L, int index) {
             lua_getfield(L, LUA_REGISTRYINDEX, SQLVALUE_GEOM_META);
             
             int is_valid = 0;
-            if (lua_rawequal(L, -1, -3) || lua_rawequal(L, -2, -3)) {
+            if (lua_rawequal(L, -1, -3) || lua_rawequal(L, -2, -3))
                 is_valid = 1;
-            }
             lua_pop(L, 3); // Limpiamos la pila
             
             if (is_valid) return (SqlValue *)ud;
@@ -597,9 +596,8 @@ static int sqlvalue_coordinates(lua_State *L) {
             break;
     }
 
-    if (geom.coordinates) {
+    if (geom.coordinates)
         free(geom.coordinates);
-    }
 
     lua_pushnil(L);
     return 1;
@@ -1032,9 +1030,8 @@ int parse_wkt_to_geometry(const char *wkt_str, MariaDBGeometry *geom) {
         // Calcular el tamaño total de la colección:
         // 4 bytes (num_geoms) + suma de los tamaños binarios de cada sub-geometría
         size_t total_len = 4;
-        for (size_t i = 0; i < sub_count; i++) {
+        for (size_t i = 0; i < sub_count; i++)
             total_len += sub_geoms[i].len;
-        }
 
         geom->coordinate_len = total_len;
         geom->coordinates = malloc(total_len);
