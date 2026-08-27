@@ -129,7 +129,6 @@ local ingredientes_vals, recetas_vals, clientes_vals = {}, {}, {}
 local repartidores_vals, pedidos_vals, detalle_vals = {}, {}, {}
 
 -- A. Marcas y Categorías
--- A. Marcas y Categorías
 for i = 1, #marcas_cat, 1 do
     local v_marca = SqlValue.string(marcas_cat[i])
     local v_cat   = SqlValue.string(categorias_cat[i])

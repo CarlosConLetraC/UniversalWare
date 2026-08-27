@@ -11,7 +11,7 @@
 #include "datatypes.h"
 #include "clientmodes.h"
 
-// 1. Conexión a MariaDB
+// 1. Conexion a MariaDB
 static int l_connect(lua_State *L) {
     const char *host = NULL,
                *user = NULL,
@@ -39,7 +39,7 @@ static int l_connect(lua_State *L) {
         
         lua_pop(L, 1);
         if (!host || !user || !pass)
-            return luaL_error(L, "La tabla de conexión requiere las claves 'host', 'user' y 'password'");
+            return luaL_error(L, "La tabla de conexion requiere las claves 'host', 'user' y 'password'");
 
         lua_getfield(L, 1, "db");
         if (lua_isstring(L, -1)) db = lua_tostring(L, -1);
@@ -107,7 +107,7 @@ static int l_connect(lua_State *L) {
     return 1;
 }
 
-// 2. Consulta estándar
+// 2. Consulta estandar
 static int l_query(lua_State *L) {
     LuaMariaDB *db_obj = (LuaMariaDB *)luaL_checkudata(L, 1, MARIADB_LUA_METATABLE);
     const char *sql = luaL_checkstring(L, 2);
@@ -150,7 +150,7 @@ static int l_query(lua_State *L) {
     return 1;
 }
 
-// 3. Consultas múltiples (multi_query)
+// 3. Consultas multiples (multi_query)
 static int l_multi_query(lua_State *L) {
     LuaMariaDB *db_obj = (LuaMariaDB *)luaL_checkudata(L, 1, MARIADB_LUA_METATABLE);
     const char *sql_script = luaL_checkstring(L, 2);
@@ -176,7 +176,8 @@ static int l_multi_query(lua_State *L) {
                 single_stmt[len] = '\0';
 
                 char *p_trim = single_stmt;
-                while (*p_trim == ' ' || *p_trim == '\t' || *p_trim == '\n' || *p_trim == '\r') p_trim++;
+                // while (*p_trim == '\32' || *p_trim == '\t' || *p_trim == '\n' || *p_trim == '\r') p_trim++;
+                for (; *p_trim == '\32' || *p_trim == '\t' || *p_trim == '\n' || *p_trim == '\r'; p_trim++);
 
                 if (*p_trim != '\0') {
                     if (mysql_query(db_obj->conn, single_stmt) != 0) {
@@ -228,7 +229,7 @@ static int l_multi_query(lua_State *L) {
     return 1;
 }
 
-// 4. Cerrar conexión
+// 4. Cerrar conexion
 static int l_close(lua_State *L) {
     LuaMariaDB *db_obj = (LuaMariaDB *)luaL_checkudata(L, 1, MARIADB_LUA_METATABLE);
     if (db_obj->conn) {
@@ -269,9 +270,9 @@ int luaopen_cmariadb(lua_State *L) {
     lua_pushinteger(L, MARIADB_CLIENT_MULTI_STATEMENTS); lua_setfield(L, -2, "MULTI_STATEMENTS");
     lua_setfield(L, -2, "CLIENT_MODE");
 
-    // SqlValue factory subtable (Ampliación completa)
+    // SqlValue factory subtable (Ampliacion completa)
     lua_newtable(L);
-    // Numéricos
+    // Numericos
     lua_pushcfunction(L, wrap_sqlvalue_tiny);     lua_setfield(L, -2, "tinyint");
     lua_pushcfunction(L, wrap_sqlvalue_small);    lua_setfield(L, -2, "smallint");
     lua_pushcfunction(L, wrap_sqlvalue_medium);   lua_setfield(L, -2, "mediumint");
@@ -298,7 +299,7 @@ int luaopen_cmariadb(lua_State *L) {
     lua_pushcfunction(L, wrap_sqlvalue_time);     lua_setfield(L, -2, "time");
     lua_pushcfunction(L, wrap_sqlvalue_timestamp);lua_setfield(L, -2, "timestamp");
 
-    // Binarios, Blobs y Geometría Espacial
+    // Binarios, Blobs y Geometria Espacial
     lua_pushcfunction(L, wrap_sqlvalue_blob);     lua_setfield(L, -2, "blob");
     lua_pushcfunction(L, wrap_sqlvalue_geometry); lua_setfield(L, -2, "geometry");
 
