@@ -633,11 +633,6 @@ void register_sqlvalue_meta(lua_State *L) {
     // --- 2. Metatabla de Geometrías (exclusiva para datos espaciales) ---
     luaL_newmetatable(L, SQLVALUE_GEOM_META);
 
-    // Copiamos o reasignamos los métodos base comunes si lo deseas, 
-    // o puedes hacer que __index apunte a la metatabla general para reutilizar string/gc/value.
-    // Una forma elegante en C es configurar su __index para que busque primero en la metatabla geom 
-    // y si no está, delegue en la general, O simplemente registrar los métodos básicos de nuevo:
-    
     lua_pushcfunction(L, sqlvalue_tostring);
     lua_setfield(L, -2, "__tostring");
 
