@@ -2,6 +2,7 @@
 #include "libbackend/Job.h"
 
 #include <filesystem>
+#include <signal.h>
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -9,6 +10,8 @@
 namespace fs = std::filesystem;
 
 int main(int argc, char** argv) {
+    signal(SIGPIPE, SIG_IGN);
+
     fs::path dir = (argc > 1) ? fs::path(argv[1]) : fs::current_path();
 
     if (!fs::exists(dir)) {
@@ -29,13 +32,15 @@ int main(int argc, char** argv) {
         std::string name = entry.path().filename().string();
         if (name.rfind("program", 0) != 0) continue;
         if (entry.path().extension() != ".lua") continue;
-        Job job(entry.path().string(), 10);
+        bool isServer = (name.find("fetch") != std::string::npos);
+        Job job(entry.path().string(), 10, isServer);
+        job.persistent = isServer;
         std::cout << "[Main] Job creado ID=" << job.id << " -> " << name << "\n";
         scheduler.submit(job);
     }
 
     std::cout << "Esperando ejecucion...\n";
-    std::this_thread::sleep_for(std::chrono::seconds(10));
+    for (;;) std::this_thread::sleep_for(std::chrono::seconds(1));
     scheduler.stopScheduler();
 
     return 0;

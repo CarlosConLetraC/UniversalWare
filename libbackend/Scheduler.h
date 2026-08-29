@@ -105,7 +105,7 @@ private:
     }
 
     void executeJob(Job job) {
-        job.status = JobStatus::RUNNING;
+        /*job.status = JobStatus::RUNNING;
 
         SAFE_COUT("[Job " << job.id << "] RUN " << job.script);
 
@@ -114,6 +114,24 @@ private:
         if (result.success) {
             job.status = JobStatus::SUCCESS;
             SAFE_COUT("[Job " << job.id << "] SUCCESS");
+            return;
+        }*/
+        job.status = JobStatus::RUNNING;
+        SAFE_COUT("[Job " << job.id << "] RUN " << job.script);
+
+        JobResult result = Worker::execute(job);
+
+        if (result.success) {
+            job.status = JobStatus::SUCCESS;
+            SAFE_COUT("[Job " << job.id << "] SUCCESS");
+            
+            // SI ES PERSISTENTE: Lo reseteamos inmediatamente sin contar como fallo ni reintento caótico
+            if (job.persistent) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                job.status = JobStatus::PENDING;
+                std::lock_guard<std::mutex> lock(mtx);
+                pending.push(std::move(job));
+            }
             return;
         }
 

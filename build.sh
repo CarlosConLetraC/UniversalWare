@@ -3,13 +3,7 @@ set -euo pipefail
 
 #ls entorno/ > /dev/null 2>&1 || ENTORNO_DEFINIDO=$?
 
-if [ ! -d "entorno/" ]; then
-    ENTORNO_DEFINIDO=1
-else
-    ENTORNO_DEFINIDO=0
-fi
-
-if ! command -v luajit &>/dev/null || [ "$ENTORNO_DEFINIDO" -ne 0 ]; then
+if ! command -v luajit &>/dev/null; then
     ./configurarentorno.sh
 fi
 

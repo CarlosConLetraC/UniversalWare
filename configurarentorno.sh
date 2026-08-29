@@ -53,7 +53,6 @@ dependencies=(
 	libgit2-dev libjpeg-dev libtiff5-dev libpng-dev
 	libfribidi-dev libharfbuzz-dev libcairo2-dev libfontconfig1-dev
 	libreadline-dev libncurses-dev unzip zip
-	python3-venv python3-pip python3-full
 	default-libmysqlclient-dev
 )
 
@@ -247,76 +246,5 @@ else
 	prettyprint 2 "No existe o no se pudo crear directorio cpplibs/"
 	exit 1
 fi
-
-prettyprint 0 "Configurando entorno Python. . ."
-
-VENV_PATH="$BASE_PATH/entorno"
-
-export TMPDIR="$BASE_PATH/.tmp"
-mkdir -p "$TMPDIR"
-
-prettyprint 0 "Asegurando estado consistente de dpkg. . ."
-sudo dpkg --configure -a
-
-if [ -d "$VENV_PATH" ]; then
-	prettyprint 1 "Entorno ya existe, verificando integridad. . ."
-
-	if [ ! -f "$VENV_PATH/bin/python" ]; then
-		prettyprint 1 "Entorno corrupto (sin python), recreando. . ."
-		rm -rf "$VENV_PATH"
-	fi
-fi
-
-if [ ! -d "$VENV_PATH" ]; then
-	prettyprint 0 "Creando entorno virtual. . ."
-
-	for i in 1 2 3; do
-		if python3 -m venv "$VENV_PATH"; then
-			break
-		else
-			prettyprint 1 "Fallo creando venv (intento $i), reintentando. . ."
-			rm -rf "$VENV_PATH"
-			sleep 2
-		fi
-	done
-
-	if [ ! -f "$VENV_PATH/bin/python" ]; then
-		prettyprint 2 "No se pudo crear el entorno virtual"
-		exit 1
-	fi
-fi
-
-prettyprint 0 "Verificando pip dentro del entorno. . ."
-
-if ! "$VENV_PATH/bin/python" -m pip --version > /dev/null 2>&1; then
-	prettyprint 1 "pip no esta disponible, recreando entorno. . ."
-	rm -rf "$VENV_PATH"
-	for i in 1 2 3; do
-		if python3 -m venv "$VENV_PATH"; then
-			if "$VENV_PATH/bin/python" -m pip --version > /dev/null 2>&1; then
-				break
-			fi
-		fi
-		prettyprint 1 "pip sigue sin existir (intento $i), reintentando. . ."
-		rm -rf "$VENV_PATH"
-		sleep 2
-	done
-
-	if ! "$VENV_PATH/bin/python" -m pip --version > /dev/null 2>&1; then
-		prettyprint 2 "No se pudo crear un entorno con pip funcional"
-		exit 1
-	fi
-fi
-
-prettyprint 0 "Actualizando herramientas base. . ."
-
-"$VENV_PATH/bin/python" -m pip install --upgrade pip setuptools wheel
-if ! "$VENV_PATH/bin/python" -m pip --version > /dev/null 2>&1; then
-	prettyprint 2 "pip quedo en estado invalido despues del upgrade"
-	exit 1
-fi
-
-# prettyprint 0 "Instalando dependencias Python. . ."
-# "$VENV_PATH/bin/python" -m pip install --upgrade pymongo matplotlib pandas numpy scikit-learn umap-learn plotly dash seaborn
 
 prettyprint 0 "Instalacion completada correctamente."
