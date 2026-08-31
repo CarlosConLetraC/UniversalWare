@@ -3,118 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo de Productos - UniversalWare</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
-            margin: 0;
-            padding: 40px;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: #1e293b;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-        }
-        h1 {
-            margin-top: 0;
-            color: #38bdf8;
-            font-size: 1.8rem;
-            border-bottom: 2px solid #334155;
-            padding-bottom: 15px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            padding: 12px 16px;
-            text-align: left;
-            border-bottom: 1px solid #334155;
-        }
-        th {
-            background-color: #334155;
-            color: #e2e8f0;
-            font-weight: 600;
-        }
-        tr:hover {
-            background-color: #273548;
-        }
-        .price {
-            color: #4ade80;
-            font-weight: bold;
-        }
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #94a3b8;
-        }
-    </style>
+    <title>UniversalWare - Dark Kitchen Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <div class="container">
-        <h1>Catálogo de Productos</h1>
-        <table id="productos-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Producto</th>
-                    <th>Marca</th>
-                    <th>Precio Venta</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-body">
-                <tr>
-                    <td colspan="4" class="loading">Cargando datos desde el servidor...</td>
-                </tr>
-            </tbody>
-        </table>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col items-center py-10">
+
+    <div class="w-full max-w-5xl px-4">
+        <h1 class="text-3xl font-bold mb-6 text-sky-400">Panel de Control - Dark Kitchen</h1>
+
+        <!-- Botones de navegación / Selección de tablas -->
+        <div class="flex flex-wrap gap-2 mb-6">
+            <button onclick="cargarTabla('marcas')" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 rounded font-medium transition">Marcas</button>
+            <button onclick="cargarTabla('categorias')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Categorias</button>
+            <button onclick="cargarTabla('productos')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Productos</button>
+            <button onclick="cargarTabla('ingredientes')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Ingredientes</button>
+            <button onclick="cargarTabla('recetas')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Recetas</button>
+            <button onclick="cargarTabla('clientes')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Clientes</button>
+            <button onclick="cargarTabla('repartidores')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Repartidores</button>
+            <button onclick="cargarTabla('pedidos')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Pedidos</button>
+            <button onclick="cargarTabla('detalle_pedidos')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Detalle de pedidos</button>
+        </div>
+
+        <!-- Contenedor de la Tabla -->
+        <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-6 shadow-xl backdrop-blur-md">
+            <h2 id="titulo-tabla" class="text-xl font-semibold mb-4 text-slate-200 capitalize">Catálogo de Productos</h2>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr id="tabla-head" class="border-b border-slate-700 text-slate-400 text-sm">
+                            <!-- Las columnas se generan dinámicamente -->
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-body" class="divide-y divide-slate-700/50 text-sm">
+                        <!-- Los datos se inyectan mediante JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="mensaje-estado" class="text-center py-6 text-slate-400">Cargando datos. . .</div>
+        </div>
     </div>
 
     <script>
-        async function cargarProductos() {
-            try {
-                // Realiza la petición a Nginx, que la redirige a tu backend en Lua (puerto 8081)
-                const response = await fetch('/api/productos');
-                if (!response.ok) throw new Error('Error al obtener los datos');
-                
-                const productos = await response.json();
-                const tbody = document.getElementById('tabla-body');
-                tbody.innerHTML = '';
+        async function cargarTabla(recurso) {
+            const titulo = document.getElementById('titulo-tabla');
+            const thead = document.getElementById('tabla-head');
+            const tbody = document.getElementById('tabla-body');
+            const mensaje = document.getElementById('mensaje-estado');
 
-                if (!productos || productos.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="loading">No hay productos registrados.</td></tr>';
+            titulo.textContent = `Vista de ${recurso.replace('_', ' ')}`;
+            mensaje.textContent = "Cargando datos. . .";
+            thead.innerHTML = "";
+            tbody.innerHTML = "";
+
+            try {
+                // Hacemos el GET al endpoint correspondiente (soporta /api/ o directo)
+                const response = await fetch(`/api/${recurso}`);
+                if (!response.ok) throw new Error("Error al conectar con el servidor backend.");
+                
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    mensaje.textContent = "No hay registros disponibles en esta tabla.";
                     return;
                 }
 
-                // Ordenamos los productos por id_producto de forma ascendente
-                productos.sort((a, b) => a.id_producto - b.id_producto);
+                mensaje.textContent = "";
 
-                productos.forEach(p => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${p.id_producto}</td>
-                        <td>${p.producto}</td>
-                        <td>${p.marca}</td>
-                        <td class="price">$${parseFloat(p.precio_venta).toFixed(2)}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                // Generar dinámicamente las cabeceras basándose en las llaves del primer objeto
+                const columnas = Object.keys(data[0]);
+                thead.innerHTML = columnas.map(col => `<th class="py-3 px-4 uppercase text-xs tracking-wider">${col}</th>`).join('');
+
+                // Generar dinámicamente las filas de datos
+                tbody.innerHTML = data.map(row => `
+                    <tr class="hover:bg-slate-700/30 transition">
+                        ${columnas.map(col => `<td class="py-3 px-4 text-slate-300">${row[col] !== null ? row[col] : ''}</td>`).join('')}
+                    </tr>
+                `).join('');
+
             } catch (error) {
                 console.error(error);
-                document.getElementById('tabla-body').innerHTML = `
-                    <tr><td colspan="4" class="loading" style="color: #f87171;">Error al conectar con el servidor backend.</td></tr>
-                `;
+                mensaje.textContent = "Error al conectar con el servidor backend.";
+                mensaje.className = "text-center py-6 text-red-400 font-medium";
             }
         }
 
-        // Cargar al iniciar la página
-        cargarProductos();
+        // Cargar productos por defecto al abrir la página
+        window.onload = () => cargarTabla('marcas');
     </script>
 </body>
 </html>

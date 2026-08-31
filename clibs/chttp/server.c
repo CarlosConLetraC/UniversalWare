@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -27,7 +28,7 @@ int l_request_gc(lua_State *L) {
     return 0;
 }
 
-// chttp.accept() -> Devuelve objeto request o nil
+// chttp.accept() -> Devuelve objeto request o nil (con soporte universal para cualquier método HTTP)
 int l_chttp_accept(lua_State *L) {
     if (server_fd < 0) return 0;
 
@@ -36,7 +37,6 @@ int l_chttp_accept(lua_State *L) {
     
     int client_sock = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
     if (client_sock < 0) {
-        // Manejo seguro de socket no bloqueante vacío
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             lua_pushnil(L);
             return 1;
@@ -45,28 +45,10 @@ int l_chttp_accept(lua_State *L) {
         return 1;
     }
 
-    // Asegurar que el socket del cliente sea no bloqueante de forma segura
-    int flags = fcntl(client_sock, F_GETFL, 0);
-    if (flags != -1) {
-        fcntl(client_sock, F_SETFL, flags | O_NONBLOCK);
-    }
-
     char buffer[4096] = {0};
     ssize_t bytes_read = read(client_sock, buffer, sizeof(buffer) - 1);
     
-    if (bytes_read < 0) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // El cliente conectó pero aún no envió datos completos. 
-            // Cerramos el socket temporalmente para evitar fugas y reintentamos luego.
-            close(client_sock);
-            lua_pushnil(L);
-            return 1;
-        } else {
-            close(client_sock);
-            lua_pushnil(L);
-            return 1;
-        }
-    } else if (bytes_read == 0) {
+    if (bytes_read <= 0) {
         close(client_sock);
         lua_pushnil(L);
         return 1;
@@ -81,7 +63,17 @@ int l_chttp_accept(lua_State *L) {
     req->client_sock = client_sock;
     req->body = NULL;
     
-    sscanf(buffer, "%15s %255s", req->method, req->path);
+    // Captura dinámica del método y la ruta
+    if (sscanf(buffer, "%15s %255s", req->method, req->path) != 2) {
+        close(client_sock);
+        lua_pushnil(L);
+        return 1;
+    }
+
+    // Normalizar el método HTTP a minúsculas (ej. GET -> get, POST -> post, OPTIONS -> options)
+    for (int i = 0; req->method[i]; i++) {
+        req->method[i] = tolower((unsigned char)req->method[i]);
+    }
 
     char *body_ptr = strstr(buffer, "\r\n\r\n");
     if (body_ptr) {
@@ -96,7 +88,7 @@ int l_chttp_accept(lua_State *L) {
     return 1;
 }
 
-// Modificar l_request_respond para prevenir doble liberación (double free)
+// Responder solicitudes estándar con JSON u otros formatos de texto
 int l_request_respond(lua_State *L) {
     HttpRequest *req = (HttpRequest*)luaL_checkudata(L, 1, CHTTP_MT);
     if (req->client_sock < 0) return 0; // Ya fue respondido o cerrado
@@ -118,7 +110,6 @@ int l_request_respond(lua_State *L) {
     close(req->client_sock);
     req->client_sock = -1;
 
-    // Liberamos el body aquí de forma segura y anulamos el puntero
     if (req->body) {
         free(req->body);
         req->body = NULL;
@@ -126,7 +117,54 @@ int l_request_respond(lua_State *L) {
     return 0;
 }
 
-#include <fcntl.h> // Asegúrate de incluir esta librería al inicio de server.c
+// NUEVO: Método para servir archivos estáticos directamente desde el disco (ej. index.html)
+int l_request_send_file(lua_State *L) {
+    HttpRequest *req = (HttpRequest*)luaL_checkudata(L, 1, CHTTP_MT);
+    if (req->client_sock < 0) return 0;
+
+    int status = luaL_checkinteger(L, 2);
+    const char *filepath = luaL_checkstring(L, 3);
+    const char *content_type = luaL_optstring(L, 4, "text/html; charset=utf-8");
+
+    FILE *f = fopen(filepath, "rb");
+    if (!f) {
+        const char *not_found = "{\"error\":\"Archivo no encontrado en el servidor\"}";
+        char header[256];
+        snprintf(header, sizeof(header), 
+            "HTTP/1.1 404 Not Found\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nConnection: close\r\n\r\n", 
+            strlen(not_found));
+        (void)write(req->client_sock, header, strlen(header));
+        (void)write(req->client_sock, not_found, strlen(not_found));
+        close(req->client_sock);
+        req->client_sock = -1;
+        return 0;
+    }
+
+    fseek(f, 0, SEEK_END);
+    long file_size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    char header[512];
+    snprintf(header, sizeof(header), 
+        "HTTP/1.1 %d OK\r\nContent-Type: %s\r\nContent-Length: %ld\r\nConnection: close\r\n\r\n", 
+        status, content_type, file_size);
+    (void)write(req->client_sock, header, strlen(header));
+
+    char buffer[8192];
+    size_t bytes_read;
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), f)) > 0)
+        (void)write(req->client_sock, buffer, bytes_read);
+
+    fclose(f);
+    close(req->client_sock);
+    req->client_sock = -1;
+
+    if (req->body) {
+        free(req->body);
+        req->body = NULL;
+    }
+    return 0;
+}
 
 // chttp.listen(host, port)
 int l_chttp_listen(lua_State *L) {
@@ -139,10 +177,8 @@ int l_chttp_listen(lua_State *L) {
     int opt = 1;
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-    // --- NUEVO: Hacer el socket no bloqueante para evitar congelamientos ---
     int flags = fcntl(server_fd, F_GETFL, 0);
     fcntl(server_fd, F_SETFL, flags | O_NONBLOCK);
-    // ------------------------------------------------------------------------
 
     struct sockaddr_in address;
     address.sin_family = AF_INET;
@@ -158,7 +194,7 @@ int l_chttp_listen(lua_State *L) {
     return 0;
 }
 
-// __index para metatabla de request (exponer propiedades method, body, etc.)
+// __index para metatabla de request (expone propiedades y métodos al entorno Lua)
 int l_request_index(lua_State *L) {
     HttpRequest *req = (HttpRequest*)luaL_checkudata(L, 1, CHTTP_MT);
     const char *key = luaL_checkstring(L, 2);
@@ -170,10 +206,13 @@ int l_request_index(lua_State *L) {
         lua_pushstring(L, req->path);
         return 1;
     } else if (strcmp(key, "body") == 0) {
-        lua_pushstring(L, req->body ? req->body : ""); // <-- Vital para POST/PUT/DELETE
+        lua_pushstring(L, req->body ? req->body : "");
         return 1;
     } else if (strcmp(key, "respond") == 0) {
         lua_pushcfunction(L, l_request_respond);
+        return 1;
+    } else if (strcmp(key, "send_file") == 0) {
+        lua_pushcfunction(L, l_request_send_file);
         return 1;
     }
     return 0;

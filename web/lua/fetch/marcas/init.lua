@@ -1,7 +1,7 @@
 local M = {}
 
 function M.get(db, json, sanitizar, peticion)
-    local query = "SELECT * FROM categorias;"
+    local query = "SELECT * FROM marcas;"
     local res, err = db:query(query)
     
     if not res then

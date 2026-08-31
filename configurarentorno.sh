@@ -43,12 +43,12 @@ mongod --version > /dev/null 2>&1 && MONGOD_INSTALADO=0 || MONGOD_INSTALADO=1
 luarocks --version > /dev/null 2>&1 && LUAROCKS_INSTALADO=0 || LUAROCKS_INSTALADO=1
 
 dependencies=(
-	luajit wget curl make cmake gfortran gcc g++ build-essential pkg-config
+	wget curl make cmake gfortran gcc g++ build-essential pkg-config
 	libssl-dev zlib1g-dev ca-certificates git
 	libproj-dev libgeos-dev libgdal-dev
 	libblas-dev liblapack-dev
 	libwebp-dev protobuf-compiler libprotobuf-dev
-	libluajit-5.1-dev libssh2-1-dev
+	libssh2-1-dev # libluajit-5.1-dev luajit
 	librsvg2-dev libcurl4-openssl-dev libxml2-dev
 	libgit2-dev libjpeg-dev libtiff5-dev libpng-dev
 	libfribidi-dev libharfbuzz-dev libcairo2-dev libfontconfig1-dev
@@ -57,9 +57,9 @@ dependencies=(
 )
 
 if [ "$OS" = "ubuntu" ]; then
-	dependencies+=(libfreetype6-dev)
+	dependencies+=(libfreetype6-dev libcjson-dev lua-cjson)
 elif [ "$OS" = "debian" ]; then
-	dependencies+=(libfreetype-dev)
+	dependencies+=(libfreetype-dev libcjson-dev lua-cjson)
 else
 	prettyprint 2 "Distribucion no soportada: $OS"
 	exit 1
@@ -68,6 +68,23 @@ fi
 prettyprint 0 "Instalando resto de dependencias sin recomendaciones de MySQL. . ."
 sudo apt-get update
 sudo apt-get install -y --no-install-recommends "${dependencies[@]}"
+
+# Forzar la compilación e instalación de la última versión de LuaJIT desde el código fuente
+if [ ! -f "/usr/bin/luajit" ] || ! luajit -v | grep -q "2.1.178"; then
+	prettyprint 0 "Compilando la versión más reciente de LuaJIT desde la fuente oficial. . ."
+	sudo apt-get remove -y libluajit-5.1-dev luajit || true
+
+	cd /tmp
+	git clone https://github.com/LuaJIT/LuaJIT.git
+	cd LuaJIT
+
+	# Compilar e instalar globalmente en el contenedor
+	make PREFIX=/usr
+	sudo make install PREFIX=/usr
+
+	cd /tmp
+	rm -rf LuaJIT
+fi
 
 if [ "$LUAROCKS_INSTALADO" -ne 0 ]; then
 	prettyprint 0 "Instalando LuaRocks $LUAROCKS_VERSION. . ."
@@ -202,11 +219,18 @@ for src in "$CLIBS_DIR"/*.c; do
 	out="$OUT_DIR/$name.so"
 	prettyprint 0 "Compilando módulo simple: $name. . ."
 
+	# Definir banderas adicionales específicas para módulos individuales
+	EXTRA_FLAGS=""
+	if [ "$name" = "cjson" ]; then
+		EXTRA_FLAGS="-ljson-c"
+	fi
+
 	gcc -O3 -fPIC -shared "$src" \
 		-I/usr/include/luajit-2.1 \
 		-I"$CLIBS_DIR" \
 		-o "$out" \
 		-lluajit-5.1 \
+		$EXTRA_FLAGS \
 		$(pkg-config --cflags --libs lua5.1 2>/dev/null || echo "")
 
 	if [ $? -eq 0 ]; then

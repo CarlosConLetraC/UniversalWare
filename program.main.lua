@@ -12,8 +12,8 @@ if not db then
 end
 print("[INFO] Conexión establecida con MariaDB.")
 
--- 2. Creación y selección de la base de datos
 assert(db:query("DROP DATABASE IF EXISTS dark_kitchen_db;"))
+-- 2. Creación y selección de la base de datos
 local ok, err = db:query("CREATE DATABASE IF NOT EXISTS dark_kitchen_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
 if not ok then
     error("[ERROR] Al crear la base de datos: " .. tostring(err))
@@ -139,10 +139,11 @@ end
 
 -- B. Productos
 local nombres_prod = {"Doble", "Especial", "Crujiente", "Suprema", "Mix", "Tradi", "Mega", "Deluxe"}
+local precio_min, precio_max = 30, 70
 for i = 1, 10, 1 do
     local c_id = SqlValue.integer(rand_num(1, #categorias_cat))
     local m_id = SqlValue.integer(rand_num(1, #marcas_cat))
-    local precio_val = 80 + math.random() * (250 - 80)
+    local precio_val = precio_min + math.random() * (precio_max - precio_min)
     local v_precio = SqlValue.decimal(precio_val)
     
     -- Uso del nuevo método :tonumber() en lugar de acceder a campos internos

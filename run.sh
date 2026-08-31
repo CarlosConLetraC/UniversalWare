@@ -19,9 +19,19 @@ function prettyprint() {
     esac
 }
 
-if ! command -v luajit >/dev/null 2>&1; then
-    prettyprint 1 "LuaJIT no encontrado, ejecutando script de configuración..."
-    ./configurarentorno.sh
+if [ ! -f "/usr/bin/luajit" ] || ! luajit -v | grep -q "2.1.178"; then
+	prettyprint 0 "Compilando la versión más reciente de LuaJIT desde la fuente oficial. . ."
+
+	cd /tmp
+	git clone https://github.com/LuaJIT/LuaJIT.git
+	cd LuaJIT
+
+	# Compilar e instalar globalmente en el contenedor
+	make PREFIX=/usr
+	sudo make install PREFIX=/usr
+
+	cd /tmp
+	rm -rf LuaJIT
 fi
 
 # Compilar el backend en C si no existe el binario o si ha cambiado
@@ -31,7 +41,7 @@ fi
 # 1. INICIALIZACIÓN DE LA BASE DE DATOS
 # ==========================================
 prettyprint 0 "Inicializando base de datos y datos semilla..."
-./backend web/lua/ program.main.lua
+./runclient program.main.lua
 
 # ==========================================
 # 2. CONFIGURACIÓN Y DESPLIEGUE DE NGINX
