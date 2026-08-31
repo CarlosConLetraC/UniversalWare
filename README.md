@@ -203,9 +203,13 @@ podmanrun universalware-env
 Una vez dentro del contenedor:
 ```bash
 cd RUTA_DE_UNIVERSAL_WARE
-./run.sh
+./configurarentorno.sh
 ```
 
+Opcionalmente, puede iniciar el programa dentro del contenedor o en el sistema principal.
+```bash
+./run.sh
+```
 ---
 
 ## 🎥 Demostración del Sistema
