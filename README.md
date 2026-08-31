@@ -131,9 +131,8 @@ UniversalWare/
 - **Sistemas Operativos:** Linux (probado y optimizado en CachyOS / Arch Linux, compatible con Ubuntu 22.04 LTS).
 - **Contenedores:** *Podman* (requerido para la compilación aislada y construcción del entorno/backend).
 - **Compilador:** GCC / G++ con soporte completo para C++17.
-- **Intérprete:** LuaJIT 2.1+.
+- **Intérprete:** LuaJIT 2.1.178+.
 - **Base de Datos:** MariaDB / MySQL Server (`mariadb-libs` en Arch/CachyOS o `libmariadb-dev` en Debian/Ubuntu).
-- **Python:** Python 3.x (`python3-venv`).
 
 ---
 
