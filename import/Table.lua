@@ -506,7 +506,7 @@ ConvertStream["number"] = function(val, seen, depth, page, nohighlight, DoMethod
 end
 
 ConvertStream["string"] = function(val, seen, depth, page, nohighlight, DoMethod, file)
-    file:write(string_format("%q", val))
+    file:write(string_format("%q", ReplaceKeymap[val]))
 end
 
 ConvertStream["boolean"] = function(val, seen, depth, page, nohighlight, DoMethod, file)

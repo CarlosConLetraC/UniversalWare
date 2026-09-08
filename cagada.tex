@@ -1,0 +1,501 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{geometry}
+\geometry{top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{tikz}
+\usepackage{xspace}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc}
+
+% Configuración de colores para código
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0.82,0.82}
+\definecolor{backcolour}{rgb}{0.96,0.96,0.96}
+\definecolor{keywordcolor}{rgb}{0.13,0.13,0.75}
+\definecolor{numbercolor}{rgb}{0.8,0.4,0}
+
+\lstdefinestyle{luastyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{keywordcolor}\bfseries,
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{red!70!black},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single,
+    extendedchars=true,
+    inputencoding=utf8,
+    literate=
+        {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+        {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+        {ñ}{{\~n}}1 {Ñ}{{\~N}}1 {¿}{{\?`}}1 {¡}{{!`}}1
+        {0}{{{\color{numbercolor}0}}}1
+        {1}{{{\color{numbercolor}1}}}1
+        {2}{{{\color{numbercolor}2}}}1
+        {3}{{{\color{numbercolor}3}}}1
+        {4}{{{\color{numbercolor}4}}}1
+        {5}{{{\color{numbercolor}5}}}1
+        {6}{{{\color{numbercolor}6}}}1
+        {7}{{{\color{numbercolor}7}}}1
+        {8}{{{\color{numbercolor}8}}}1
+        {9}{{{\color{numbercolor}9}}}1
+}
+
+\lstdefinelanguage{lua}{
+  morekeywords={local, function, end, if, then, else, elseif, while, do, repeat, until, for, in, return, break, nil, true, false, assert, error, import, tostring, print},
+  sensitive=true,
+  morecomment=[l]{--},
+  morecomment=[s][\color{codegreen}]{--[===[}{]===]},
+  morecomment=[s][\color{codegreen}]{--[==[}{]==]},
+  morecomment=[s][\color{codegreen}]{--[=[}{]=]},
+  morecomment=[s][\color{codegreen}]{--[[}{]]},
+  morestring=[b]",
+  morestring=[b]',
+  morecomment=[s][\color{red!70!black}]{[===[}{]===]},
+  morecomment=[s][\color{red!70!black}]{[==[}{]==]},
+  morecomment=[s][\color{red!70!black}]{[=[}{]=]},
+  morecomment=[s][\color{red!70!black}]{[[}{]]}
+}
+
+\lstset{style=luastyle}
+
+% --- ENCABEZADOS Y PIE DE PÁGINA ---
+\pagestyle{fancy}
+\fancyhf{} 
+\rhead{\includegraphics[height=1.2cm]{logo.png}}
+\lhead{\small \textbf{Base de Datos} -- Actividad 3}
+\rfoot{Página \thepage}
+
+% --- DATOS DE LA PORTADA ---
+\title{\textbf{Administración y Diseño de Base de Datos: Concesionaria de Automóviles}\\ \large Análisis Operativo, Modelo Relacional, Normalización y Carga Automatizada en LuaJIT}
+\author{\textbf{Nombre:} GARCIA CAPISTRAN JOSE CARLOS \\ \textbf{Matrícula:} AL07172840 \\ \textbf{Materia:} Base de Datos}
+\date{\today}
+
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+
+\hrule
+\vspace{0.5cm}
+
+\section{Análisis de la Industria y Organización de Información}
+
+El modelo de negocio de una red de \textbf{Concesionarios de Automóviles} administra el inventario multimarca, la asignación de vendedores a salas de exhibición, el registro de unidades físicamente disponibles y el procesamiento transaccional de ventas tanto de contado como a crédito.
+
+\subsection{Giro de la Empresa y Uso de la Información}
+La empresa pertenece al giro automotriz y de servicios comerciales. Maneja catálogos de modelos con especificaciones técnicas (potencia, tipo de motor, cilindraje), números de serie de vehículos en stock, datos de contacto de ejecutivos de venta y transacciones comerciales estructuradas.
+
+\subsection{Almacenamiento Tradicional vs. Base de Datos Relacional}
+Tradicionalmente, las concesionarias organizan su información en hojas de cálculo no integradas compartidas por red local o correo electrónico:
+\begin{itemize}
+    \item \textbf{Excel de Catálogo e Inventario}: Registro de modelos, números de serie, precios base y ubicaciones (local, almacén, servicio oficial).
+    \item \textbf{Excel de Vendedores y Comisiones}: Directorios con teléfonos, WhatsApp y asignación a concesionarias.
+    \item \textbf{Excel de Registro de Ventas}: Mapeo de clientes, matrículas asignadas, fechas de entrega y modalidades de pago.
+\end{itemize}
+
+\textbf{Deficiencias del modelo tradicional}: Redundancia de datos, riesgo de duplicidad en números de serie (VIN), falta de integridad referencial al eliminar modelos descontinuados y desactualización del inventario real ante ventas simultáneas.
+
+\section{Diseño Conceptual y Restricciones de Integridad}
+
+Se diseñó un modelo conceptual centralizado con las siguientes entidades principales y sus atributos clave:
+
+\begin{itemize}
+    \item \textbf{Concesionarios}: \texttt{id\_concesionario}, \texttt{nombre}, \texttt{domicilio}, \texttt{telefono}.
+    \item \textbf{Vendedores}: \texttt{id\_vendedor}, \texttt{id\_concesionario}, \texttt{nombre}, \texttt{domicilio}, \texttt{telefono}, \texttt{whatsapp}.
+    \item \textbf{Modelos\_Autos}: \texttt{id\_modelo}, \texttt{marca}, \texttt{modelo}, \texttt{anho}, \texttt{precio\_base}, \texttt{descuento}, \texttt{tipo\_motor}, \texttt{potencia}, \texttt{cilindros}.
+    \item \textbf{Automoviles\_Stock}: \texttt{numero\_serie}, \texttt{id\_modelo}, \texttt{id\_concesionario}, \texttt{ubicacion}.
+    \item \textbf{Ventas}: \texttt{id\_venta}, \texttt{numero\_serie}, \texttt{id\_vendedor}, \texttt{precio\_venta}, \texttt{modo\_pago}, \texttt{fecha\_entrega}, \texttt{matricula}, \texttt{origen\_adquisicion}.
+    \item \textbf{Ventas\_Acumuladas}: \texttt{id\_simulacion}, \texttt{fecha}, \texttt{modelo}, \texttt{vendedor}, \texttt{total}.
+\end{itemize}
+
+\subsection{Restricciones de Integridad}
+\begin{enumerate}
+    \item \textbf{Integridad de Entidad}: Claves primarias únicas definidas en cada tabla (\texttt{id\_concesionario}, \texttt{id\_vendedor}, \texttt{id\_modelo}, \texttt{numero\_serie}, \texttt{id\_venta}, \texttt{id\_simulacion}).
+    \item \textbf{Integridad Referencial}: Llaves foráneas con reglas \texttt{ON DELETE CASCADE / RESTRICT} y \texttt{ON UPDATE CASCADE} para preservar la consistencia entre stock, vendedores y ventas.
+    \item \textbf{Integridad de Dominio}: Campos restrictivos con enumeraciones (\texttt{ENUM('Contado', 'Credito')}, \texttt{ENUM('Stock', 'Fabrica')}) y restricciones de completitud (\texttt{NOT NULL}).
+\end{enumerate}
+
+\newpage
+
+\section{Diagrama Entidad-Relación}
+
+A continuación se presenta la arquitectura conceptual y las relaciones cardinales del sistema de concesionarios:
+
+\begin{figure}[h!]
+\centering
+\resizebox{0.95\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=1.6cm and 2.2cm,
+        entity/.style={rectangle, draw=blue!80, fill=blue!5, thick, minimum width=2.8cm, minimum height=1cm, align=center, font=\small},
+        rel/.style={diamond, draw=red!80, fill=red!5, thick, aspect=1.8, inner sep=1pt, align=center, font=\scriptsize},
+        card/.style={font=\tiny\bfseries, color=gray!90!black}
+    ]
+        % Entidades
+        \node[entity] (concesionarios) {\textbf{concesionarios}\\ \tiny id\_concesionario (PK)};
+        \node[entity, right=3.0cm of concesionarios] (vendedores) {\textbf{vendedores}\\ \tiny id\_vendedor (PK)};
+        \node[entity, below=2.5cm of concesionarios] (stock) {\textbf{automoviles\_stock}\\ \tiny numero\_serie (PK)};
+        \node[entity, left=3.0cm of stock] (modelos) {\textbf{modelos\_autos}\\ \tiny id\_modelo (PK)};
+        \node[entity, right=3.0cm of stock] (ventas) {\textbf{ventas}\\ \tiny id\_venta (PK)};
+
+        % Relaciones
+        \node[rel] (r_emplea) at ($(concesionarios)!0.5!(vendedores)$) {Emplea};
+        \node[rel] (r_almacena) at ($(concesionarios)!0.5!(stock)$) {Almacena};
+        \node[rel] (r_clasifica) at ($(modelos)!0.5!(stock)$) {Clasifica};
+        \node[rel] (r_realiza) at ($(vendedores)!0.5!(ventas)$) {Realiza};
+        \node[rel] (r_vende) at ($(stock)!0.5!(ventas)$) {Suministra};
+
+        % Conexiones
+        \draw[thick] (concesionarios) -- (r_emplea) -- (vendedores);
+        \draw[thick] (concesionarios) -- (r_almacena) -- (stock);
+        \draw[thick] (modelos) -- (r_clasifica) -- (stock);
+        \draw[thick] (vendedores) -- (r_realiza) -- (ventas);
+        \draw[thick] (stock) -- (r_vende) -- (ventas);
+    \end{tikzpicture}
+}
+\caption{Diagrama Entidad-Relación del Sistema de Concesionarios.}
+\label{fig:er_concesionario}
+\end{figure}
+
+\newpage
+\section{Estructura de Datos y Diagrama Relacional}
+
+Representación detallada de las tablas creadas en MariaDB InnoDB:
+
+\begin{figure}[h!]
+\centering
+\resizebox{0.95\textwidth}{!}{
+    \begin{tikzpicture}[
+        tablebox/.style={
+            draw=black!70,
+            fill=white,
+            thick,
+            rounded corners=2pt,
+            inner sep=0pt,
+            font=\small
+        }
+    ]
+        % FILA 1
+        \node[tablebox] (concesionarios) {
+            \begin{tabular}{l|r}
+                \multicolumn{2}{c}{\textbf{concesionarios}} \\ \hline
+                \textcolor{orange!80!black}{$\mathbf{\mu}$}\ id\_concesionario & \textit{INT (PK)} \\
+                nombre & \textit{VARCHAR(100)} \\
+                domicilio & \textit{VARCHAR(200)} \\
+                telefono & \textit{VARCHAR(20)} \\
+            \end{tabular}
+        };
+
+        \node[tablebox, right=2.0cm of concesionarios] (vendedores) {
+            \begin{tabular}{l|r}
+                \multicolumn{2}{c}{\textbf{vendedores}} \\ \hline
+                \textcolor{orange!80!black}{$\mathbf{\mu}$}\ id\_vendedor & \textit{INT (PK)} \\
+                id\_concesionario & \textit{INT (FK)} \\
+                nombre & \textit{VARCHAR(100)} \\
+                telefono & \textit{VARCHAR(20)} \\
+                whatsapp & \textit{VARCHAR(20)} \\
+            \end{tabular}
+        };
+
+        % FILA 2
+        \node[tablebox, below=2.5cm of concesionarios] (modelos) {
+            \begin{tabular}{l|r}
+                \multicolumn{2}{c}{\textbf{modelos\_autos}} \\ \hline
+                \textcolor{orange!80!black}{$\mathbf{\mu}$}\ id\_modelo & \textit{INT (PK)} \\
+                marca & \textit{VARCHAR(50)} \\
+                modelo & \textit{VARCHAR(50)} \\
+                anho & \textit{INT} \\
+                precio\_base & \textit{DECIMAL(12,2)} \\
+            \end{tabular}
+        };
+
+        \node[tablebox, right=2.0cm of modelos] (stock) {
+            \begin{tabular}{l|r}
+                \multicolumn{2}{c}{\textbf{automoviles\_stock}} \\ \hline
+                \textcolor{orange!80!black}{$\mathbf{\mu}$}\ numero\_serie & \textit{VARCHAR(50) (PK)} \\
+                id\_modelo & \textit{INT (FK)} \\
+                id\_concesionario & \textit{INT (FK)} \\
+                ubicacion & \textit{VARCHAR(50)} \\
+            \end{tabular}
+        };
+
+        \node[tablebox, right=2.0cm of stock] (ventas) {
+            \begin{tabular}{l|r}
+                \multicolumn{2}{c}{\textbf{ventas}} \\ \hline
+                \textcolor{orange!80!black}{$\mathbf{\mu}$}\ id\_venta & \textit{INT (PK)} \\
+                numero\_serie & \textit{VARCHAR(50) (FK)} \\
+                id\_vendedor & \textit{INT (FK)} \\
+                precio\_venta & \textit{DECIMAL(12,2)} \\
+                modo\_pago & \textit{ENUM} \\
+            \end{tabular}
+        };
+
+        % Conexiones
+        \draw[thick] (concesionarios.east) -- (vendedores.west);
+        \draw[thick] (concesionarios.south) -- (stock.north);
+        \draw[thick] (modelos.east) -- (stock.west);
+        \draw[thick] (stock.east) -- (ventas.west);
+        \draw[thick] (vendedores.south) |- (ventas.north);
+    \end{tikzpicture}
+}
+\caption{Modelo Relacional de Concesionarias y Ventas.}
+\end{figure}
+
+\subsection{Procedimientos para Pruebas de Integridad y Conectividad}
+\begin{itemize}
+    \item \textbf{Prueba de Conectividad en LuaJIT}: Inicialización exitosa del socket de MariaDB mediante el módulo \texttt{cmariadb.so}.
+    \item \textbf{Prueba de Eliminación en Cascada/Restricción}: Verificación de la desactivación temporal del control de claves foráneas con \texttt{SET FOREIGN\_KEY\_CHECKS = 0;} durante ejecuciones masivas.
+\end{itemize}
+
+\section{Diseño Lógico y Proceso de Normalización}
+
+Se aplicaron rigurosamente las primeras tres formas normales (1NF, 2NF, 3NF):
+
+\begin{enumerate}
+    \item \textbf{Primera Forma Normal (1NF)}: Todos los atributos son atómicos. Se eliminaron listas de automóviles o teléfonos múltiples concatenados en una columna.
+    \item \textbf{Segunda Forma Normal (2FN)}: Los atributos no clave de cada tabla dependen completamente de su clave primaria. Los detalles del modelo de auto se separaron del registro individual del número de serie en stock.
+    \item \textbf{Tercera Forma Normal (3FN)}: Eliminación de dependencias transitivas. Los datos del concesionario o vendedor no se almacenan directamente en la tabla de ventas, sino a través de claves foráneas referenciadas.
+\end{enumerate}
+
+\newpage
+
+\section{Configuración de Accesos y Privilegios}
+
+Configuración de usuarios en MariaDB para acceso mediante socket o TCP local:
+
+\begin{lstlisting}[language=sql, caption={Configuración del usuario de aplicación}]
+CREATE USER IF NOT EXISTS 'lua_client'@'localhost' IDENTIFIED BY '12345';
+GRANT ALL PRIVILEGES ON autos_concesionario_db.* TO 'lua_client'@'localhost';
+FLUSH PRIVILEGES;
+\end{lstlisting}
+
+\section{Implementación del Script en LuaJIT (program.actividad3.lua)}
+
+El siguiente script ejecuta la creación del esquema DDL, la siembra automatizada de 20 registros por tabla sin valores nulos, y las consultas de actualización, eliminación y filtrado:
+
+\begin{lstlisting}[language=lua, caption={Script en LuaJIT para automatización de la Base de Datos (program.actividad3.lua)}]
+import("cmariadb", "system")
+
+-- 1. Conexión a la base de datos
+local db, err = cmariadb.connect({
+    host = "127.0.0.1",
+    user = "lua_client",
+    password = "12345",
+    client_mode = cmariadb.CLIENT_MODE.MULTIPLE_STATEMENTS
+})
+if not db then
+    error("[ERROR] No se pudo conectar a MariaDB: " .. tostring(err))
+end
+print("[INFO] Conexión establecida con MariaDB.")
+
+-- Creación y selección de la base de datos
+assert(db:query("DROP DATABASE IF EXISTS autos_concesionario_db;"))
+assert(db:query("CREATE DATABASE IF NOT EXISTS autos_concesionario_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"))
+assert(db:query("USE autos_concesionario_db;"))
+print("[INFO] Base de datos 'autos_concesionario_db' creada y seleccionada.")
+
+-- 2. Definición del Esquema DDL (Relaciones, Llaves Primarias y Foráneas)
+local ddl_schema = [[
+    CREATE TABLE IF NOT EXISTS concesionarios (
+        id_concesionario INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(100) NOT NULL,
+        domicilio VARCHAR(200) NOT NULL,
+        telefono VARCHAR(20) NOT NULL
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE IF NOT EXISTS vendedores (
+        id_vendedor INT AUTO_INCREMENT PRIMARY KEY,
+        id_concesionario INT NOT NULL,
+        nombre VARCHAR(100) NOT NULL,
+        domicilio VARCHAR(200) NOT NULL,
+        telefono VARCHAR(20) NOT NULL,
+        whatsapp VARCHAR(20) NOT NULL,
+        FOREIGN KEY (id_concesionario) REFERENCES concesionarios(id_concesionario) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE IF NOT EXISTS modelos_autos (
+        id_modelo INT AUTO_INCREMENT PRIMARY KEY,
+        marca VARCHAR(50) NOT NULL,
+        modelo VARCHAR(50) NOT NULL,
+        anho INT NOT NULL,
+        precio_base DECIMAL(12,2) NOT NULL,
+        descuento DECIMAL(5,2) DEFAULT 0.00,
+        tipo_motor VARCHAR(50) NOT NULL,
+        potencia INT NOT NULL,
+        cilindros INT NOT NULL
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE IF NOT EXISTS automoviles_stock (
+        numero_serie VARCHAR(50) PRIMARY KEY,
+        id_modelo INT NOT NULL,
+        id_concesionario INT NOT NULL,
+        ubicacion VARCHAR(50) NOT NULL, -- Local, Sucursal, Almacen, Servicio Oficial
+        FOREIGN KEY (id_modelo) REFERENCES modelos_autos(id_modelo) ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY (id_concesionario) REFERENCES concesionarios(id_concesionario) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE IF NOT EXISTS ventas (
+        id_venta INT AUTO_INCREMENT PRIMARY KEY,
+        numero_serie VARCHAR(50) NOT NULL,
+        id_vendedor INT NOT NULL,
+        precio_venta DECIMAL(12,2) NOT NULL,
+        modo_pago ENUM('Contado', 'Credito') NOT NULL,
+        fecha_entrega DATE NOT NULL,
+        matricula VARCHAR(20) NOT NULL,
+        origen_adquisicion ENUM('Stock', 'Fabrica') NOT NULL,
+        FOREIGN KEY (numero_serie) REFERENCES automoviles_stock(numero_serie) ON DELETE RESTRICT ON UPDATE CASCADE,
+        FOREIGN KEY (id_vendedor) REFERENCES vendedores(id_vendedor) ON DELETE RESTRICT ON UPDATE CASCADE
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE IF NOT EXISTS ventas_acumuladas (
+        id_simulacion INT AUTO_INCREMENT PRIMARY KEY,
+        fecha DATE NOT NULL,
+        modelo VARCHAR(100) NOT NULL,
+        vendedor VARCHAR(100) NOT NULL,
+        total DECIMAL(12,2) NOT NULL
+    ) ENGINE=InnoDB;
+]]
+
+assert(db:multi_query(ddl_schema))
+print("[INFO] Estructura relacional creada exitosamente.")
+
+-- 3. Inserción automatizada de 20 registros NOT NULL por tabla
+math.randomseed(os.time())
+
+local marcas_arr = {"Audi", "Suzuki", "Honda", "Volkswagen", "BMW", "Toyota", "Nissan", "Mazda"}
+local nombres_arr = {"Carlos", "Ana", "Luis", "Maria", "Jorge", "Sofia", "Diego", "Valeria"}
+local apellidos_arr = {"Gomez", "Lopez", "Perez", "Martines", "Sanchez", "Ramirez"}
+
+local function rand_elt(t) return t[math.random(#t)] end
+
+-- Generar datos en bloques
+local con_vals, vend_vals, mod_vals, auto_vals, vent_vals, sim_vals = {}, {}, {}, {}, {}, {}
+
+for i = 1, 20, 1 do
+    -- Concesionarios
+    table.insert(con_vals, string.format("('Concesionario Central %d', 'Av. Reforma %d', '555000%02d')", i, i*10, i))
+    
+    -- Vendedores (asociados a concesionarios 1 a 20)
+    table.insert(vend_vals, string.format("(%d, '%s %s', 'Calle Sur %d', '555111%02d', '555111%02d')", 
+        ((i-1)%5)+1, rand_elt(nombres_arr), rand_elt(apellidos_arr), i, i, i))
+    
+    -- Modelos de Autos (mezclando años antes y después de 2020 para la prueba de DELETE)
+    local anho_val = (i <= 5) and (2017 + (i % 3)) or 2021 + (i % 5)
+    table.insert(mod_vals, string.format("('%s', 'Modelo-%d', %d, %d.00, %d.00, 'Turbo', %d, %d)", 
+        rand_elt(marcas_arr), i, anho_val, 140000 + (i * 12000), (i%2==0) and 5.00 or 0.00, 150 + i*10, (i%2==0)?4:6))
+    
+    -- Automóviles en Stock
+    table.insert(auto_vals, string.format("('SN-VIN-%04d', %d, %d, '%s')", 
+        i, i, ((i-1)%5)+1, (i%2==0) and "Local Ventas" or "Servicio Oficial"))
+        
+    -- Ventas
+    table.insert(vent_vals, string.format("('SN-VIN-%04d', %d, %d.00, '%s', '2026-08-%02d', 'ABC-%03d', '%s')", 
+        i, ((i-1)%5)+1, 150000.00 + (i * 5000), (i%2==0) and "Contado" or "Credito", (i%28)+1, i, (i%3==0) and "Fabrica" or "Stock"))
+end
+
+-- 25 Simulaciones para ventas_acumuladas
+for i = 1, 25, 1 do
+    table.insert(sim_vals, string.format("('2026-08-%02d', 'Modelo-%d', 'Vendedor %d', %d.00)", 
+        (i%28)+1, (i%20)+1, (i%5)+1, 140000 + (i * 8500)))
+end
+
+local dml_inserts = string.format([[
+    SET FOREIGN_KEY_CHECKS = 0;
+    INSERT INTO concesionarios (nombre, domicilio, telefono) VALUES %s;
+    INSERT INTO vendedores (id_concesionario, nombre, domicilio, telefono, whatsapp) VALUES %s;
+    INSERT INTO modelos_autos (marca, modelo, anho, precio_base, descuento, tipo_motor, potencia, cilindros) VALUES %s;
+    INSERT INTO automoviles_stock (numero_serie, id_modelo, id_concesionario, ubicacion) VALUES %s;
+    INSERT INTO ventas (numero_serie, id_vendedor, precio_venta, modo_pago, fecha_entrega, matricula, origen_adquisicion) VALUES %s;
+    INSERT INTO ventas_acumuladas (fecha, modelo, vendedor, total) VALUES %s;
+    SET FOREIGN_KEY_CHECKS = 1;
+]], table.concat(con_vals, ","), table.concat(vend_vals, ","), table.concat(mod_vals, ","), 
+    table.concat(auto_vals, ","), table.concat(vent_vals, ","), table.concat(sim_vals, ","))
+
+assert(db:multi_query(dml_inserts))
+print("[INFO] Registros semilla insertados correctamente en todas las tablas.")
+
+-- ==========================================
+-- 4. EJECUCIÓN DE CONSULTAS Y OPERACIONES SOLICITADAS
+-- ==========================================
+
+print("\n--- A. VENTAS DE UNA SOLA CONCESIONARIA (LIMIT 5) ---")
+local q_limit = db:query([[
+    SELECT v.id_venta, c.nombre AS concesionario, v.precio_venta, v.modo_pago, v.matricula 
+    FROM ventas v
+    JOIN automoviles_stock a ON v.numero_serie = a.numero_serie
+    JOIN concesionarios c ON a.id_concesionario = c.id_concesionario
+    WHERE c.id_concesionario = 1
+    LIMIT 5;
+]])
+system.print(q_limit)
+
+print("\n--- B. VENTAS ORDENADAS MAYORES A $150,000.00 (ORDER BY) ---")
+local q_order = db:query([[
+    SELECT id_venta, numero_serie, precio_venta, modo_pago, fecha_entrega 
+    FROM ventas 
+    WHERE precio_venta > 150000.00 
+    ORDER BY precio_venta DESC;
+]])
+system.print(q_order)
+
+print("\n--- C. MODIFICAR NOMBRE DE CONCESIONARIOS CON REPLACE ---")
+assert(db:query([[
+    UPDATE concesionarios 
+    SET nombre = CONCAT(nombre, '-nacional');
+]]))
+local q_replace = db:query("SELECT id_concesionario, nombre FROM concesionarios LIMIT 5;")
+system.print(q_replace)
+print("> Interpretación: Se actualizó el nombre de cada concesionaria concatenando el sufijo nacional.")
+
+print("\n--- D. ELIMINAR MODELOS ANTERIORES AL AÑO 2020 (DELETE) ---")
+assert(db:multi_query([[
+    SET FOREIGN_KEY_CHECKS = 0;
+    DELETE FROM ventas WHERE numero_serie IN (
+        SELECT s.numero_serie FROM automoviles_stock s 
+        JOIN modelos_autos m ON s.id_modelo = m.id_modelo 
+        WHERE m.anho < 2020
+    );
+    DELETE FROM automoviles_stock WHERE id_modelo IN (
+        SELECT id_modelo FROM modelos_autos WHERE anho < 2020
+    );
+    DELETE FROM modelos_autos WHERE anho < 2020;
+    SET FOREIGN_KEY_CHECKS = 1;
+]]))
+assert(db:query("DELETE FROM modelos_autos WHERE anho < 2020;"))
+local q_delete = db:query("SELECT id_modelo, marca, modelo, anho FROM modelos_autos LIMIT 5;")
+system.print(q_delete)
+print("> Interpretación: Se removieron del catálogo todos los vehículos con año de fabricación menor a 2020.")
+
+db:close()
+\end{lstlisting}
+
+\newpage
+
+\section{Explicación Detallada de los Pasos Realizados}
+
+\begin{enumerate}
+    \item \textbf{Diseño y Creación de Esquema DDL}: Se estructuró la base de datos \texttt{autos\_concesionario\_db} en MariaDB definiendo claves primarias, foráneas y restricciones \texttt{NOT NULL}.
+    \item \textbf{Generación Dinámica e Inserción de Datos}: Mediante ciclos en LuaJIT se sembraron 20 registros por tabla principal y 25 simulaciones en \texttt{ventas\_acumuladas}.
+    \item \textbf{Filtrado con LIMIT}: Se ejecutó una consulta \texttt{JOIN} filtrando ventas del concesionario 1 acotadas a 5 registros.
+    \item \textbf{Ordenamiento con ORDER BY}: Se seleccionaron transacciones con precio mayor a \$150,000.00 ordenadas descendentemente.
+    \item \textbf{Actualización Masiva (UPDATE/CONCAT)}: Se modificaron los nombres de las concesionarias añadiendo la extensión \texttt{-nacional}.
+    \item \textbf{Eliminación Condicional (DELETE)}: Se depuró el catálogo removiendo vehículos y modelos con año de fabricación inferior a 2020.
+\end{enumerate}
+
+\end{document}

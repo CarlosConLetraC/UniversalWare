@@ -18,6 +18,7 @@
     #define MARIADB_SQLVALUE_METATABLE "cmariadb.SqlValue.meta"
     #define SQLVALUE_META "MariaDB.SqlValue"
     #define SQLVALUE_GEOM_META "MariaDB.SqlValue.Geometry"
+    #define SQLVALUE_SET_META "MariaDB.SqlValue.Set"
 
     // Estructura contenedora para el Userdata de Lua (Conexión)
     typedef struct {

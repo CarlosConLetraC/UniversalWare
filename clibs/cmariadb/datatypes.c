@@ -1,5 +1,7 @@
 #include "datatypes.h"
 
+static int sqlvalue_coordinates(lua_State *L);
+
 // Función auxiliar para obtener y validar un SqlValue sin importar si es geométrica o general
 SqlValue* check_sql_value(lua_State *L, int index) {
     void *ud = lua_touserdata(L, index);
@@ -265,20 +267,36 @@ static int sqlvalue_value(lua_State *L) {
             break;
         case MYSQL_TYPE_GEOMETRY: {
             MariaDBGeometry geom;
-            if (parse_internal_geometry(v->data.blob_val.ptr, v->data.blob_val.len, &geom) == 0 ||
-                parse_wkb_geometry(v->data.blob_val.ptr, v->data.blob_val.len, &geom) == 0) {
-                
-                lua_newtable(L);
-                lua_pushinteger(L, geom.srid); lua_setfield(L, -2, "srid");
-                lua_pushinteger(L, geom.byte_order); lua_setfield(L, -2, "byte_order");
-                lua_pushinteger(L, geom.type); lua_setfield(L, -2, "type");
-                if (geom.coordinates && geom.coordinate_len > 0) {
-                    lua_pushlstring(L, (const char *)geom.coordinates, geom.coordinate_len);
-                    lua_setfield(L, -2, "coordinates");
-                    free(geom.coordinates);
-                } else {
-                    lua_pushnil(L); lua_setfield(L, -2, "coordinates");
+            int parsed = -1;
+
+            // 1. Detectar si es WKT o binario
+            if (v->data.blob_val.len > 0 && isalpha((unsigned char)((char *)v->data.blob_val.ptr)[0])) {
+                char *wkt_str = malloc(v->data.blob_val.len + 1);
+                if (wkt_str) {
+                    memcpy(wkt_str, v->data.blob_val.ptr, v->data.blob_val.len);
+                    wkt_str[v->data.blob_val.len] = '\0';
+                    parsed = parse_wkt_to_geometry(wkt_str, &geom);
+                    free(wkt_str);
                 }
+            } else {
+                parsed = parse_internal_geometry(v->data.blob_val.ptr, v->data.blob_val.len, &geom);
+                if (parsed != 0)
+                    parsed = parse_wkb_geometry(v->data.blob_val.ptr, v->data.blob_val.len, &geom);
+            }
+
+            if (parsed == 0) {
+                // 2. Construir la tabla contenedora con metadatos reales
+                lua_newtable(L);
+                lua_pushinteger(L, geom.srid);       lua_setfield(L, -2, "srid");
+                lua_pushinteger(L, geom.byte_order); lua_setfield(L, -2, "byte_order");
+                lua_pushinteger(L, geom.type);       lua_setfield(L, -2, "type");
+
+                // Liberar el buffer que asignó el parseador antes de invocar la subfunción
+                if (geom.coordinates) free(geom.coordinates);
+
+                // 3. Invocar sqlvalue_coordinates (usa v en el índice 1)
+                sqlvalue_coordinates(L);
+                lua_setfield(L, -2, "coordinates");
             } else {
                 lua_pushnil(L);
             }
