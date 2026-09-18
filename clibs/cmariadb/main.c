@@ -11,6 +11,16 @@
 #include "datatypes.h"
 #include "clientmodes.h"
 
+/* Función auxiliar para recortar espacios en blanco */
+static char* trim_whitespace(char *str) {
+    while (isspace((unsigned char)*str)) str++;
+    if (*str == 0) return str;
+    char *end = str + strlen(str) - 1;
+    while (end > str && isspace((unsigned char)*end)) end--;
+    end[1] = '\0';
+    return str;
+}
+
 // 1. Conexion a MariaDB
 static int l_connect(lua_State *L) {
     const char *host = NULL,
@@ -229,7 +239,150 @@ static int l_multi_query(lua_State *L) {
     return 1;
 }
 
-// 4. Cerrar conexion
+/* 3. Ejecución de scripts / bloques SQL (método db:execute) */
+static int l_execute_script(lua_State *L) {
+    LuaMariaDB *db_obj = (LuaMariaDB *)luaL_checkudata(L, 1, MARIADB_LUA_METATABLE);
+    const char *sql_src = luaL_checkstring(L, 2);
+
+    if (!db_obj->conn) return luaL_error(L, "La conexion a la base de datos esta cerrada");
+
+    char *script_copy = strdup(sql_src);
+    if (!script_copy) {
+        return luaL_error(L, "Memoria insuficiente para procesar el script SQL");
+    }
+
+    char current_delimiter[16] = ";";
+    size_t delim_len = 1;
+
+    char *line = script_copy;
+    char *next_line = NULL;
+
+    size_t buf_cap = 4096;
+    size_t buf_len = 0;
+    char *query_buf = (char *)malloc(buf_cap);
+    if (!query_buf) {
+        free(script_copy);
+        return luaL_error(L, "Memoria insuficiente para la consulta SQL");
+    }
+    query_buf[0] = '\0';
+
+    int statement_count = 0;
+    lua_newtable(L); // Tabla contenedora principal de resultados
+
+    while (line && *line) {
+        next_line = strchr(line, '\n');
+        if (next_line) {
+            *next_line = '\0';
+            next_line++;
+        }
+
+        char *trimmed = trim_whitespace(line);
+
+        // Omitir líneas vacías o comentarios estilo '--' o '#'
+        if (trimmed[0] == '\0' || strncmp(trimmed, "--", 2) == 0 || trimmed[0] == '#') {
+            line = next_line;
+            continue;
+        }
+
+        // Detectar directiva DELIMITER (ej. DELIMITER // o DELIMITER ;)
+        if (strncasecmp(trimmed, "DELIMITER", 9) == 0 && isspace((unsigned char)trimmed[9])) {
+            char *new_delim = trim_whitespace(trimmed + 10);
+            if (strlen(new_delim) > 0 && strlen(new_delim) < sizeof(current_delimiter)) {
+                strcpy(current_delimiter, new_delim);
+                delim_len = strlen(current_delimiter);
+            }
+            line = next_line;
+            continue;
+        }
+
+        size_t line_len = strlen(line);
+        while (buf_len + line_len + 2 >= buf_cap) {
+            buf_cap *= 2;
+            char *new_buf = (char *)realloc(query_buf, buf_cap);
+            if (!new_buf) {
+                free(query_buf);
+                free(script_copy);
+                return luaL_error(L, "Memoria insuficiente al reasignar buffer SQL");
+            }
+            query_buf = new_buf;
+        }
+
+        strcat(query_buf, line);
+        strcat(query_buf, "\n");
+        buf_len += line_len + 1;
+
+        // Comprobar si la instrucción termina en el delimitador activo
+        char *end_of_buf = trim_whitespace(query_buf);
+        size_t eob_len = strlen(end_of_buf);
+
+        if (eob_len >= delim_len && strcmp(end_of_buf + eob_len - delim_len, current_delimiter) == 0) {
+            end_of_buf[eob_len - delim_len] = '\0';
+            char *final_query = trim_whitespace(end_of_buf);
+
+            if (strlen(final_query) > 0) {
+                if (mysql_query(db_obj->conn, final_query) != 0) {
+                    lua_pushnil(L);
+                    lua_pushfstring(L, "Error en sentencia #%d: %s\nConsulta: %s", 
+                                    statement_count + 1, mysql_error(db_obj->conn), final_query);
+                    free(query_buf);
+                    free(script_copy);
+                    return 2;
+                }
+
+                MYSQL_RES *res = mysql_store_result(db_obj->conn);
+                if (res) {
+                    int num_fields = mysql_num_fields(res);
+                    MYSQL_FIELD *fields = mysql_fetch_fields(res);
+                    lua_newtable(L);
+                    int row_index = 1;
+                    MYSQL_ROW row;
+                    unsigned long *lengths;
+
+                    while ((row = mysql_fetch_row(res))) {
+                        lua_newtable(L);
+                        lengths = mysql_fetch_lengths(res);
+                        for (int i = 0; i < num_fields; i++) {
+                            lua_pushstring(L, fields[i].name);
+                            push_mariadb_field(L, &fields[i], row[i], lengths ? lengths[i] : 0);
+                            lua_settable(L, -3);
+                        }
+                        lua_rawseti(L, -2, row_index++);
+                    }
+                    mysql_free_result(res);
+                    lua_rawseti(L, -2, ++statement_count);
+                } else {
+                    if (mysql_field_count(db_obj->conn) == 0) {
+                        lua_pushboolean(L, 1);
+                        lua_rawseti(L, -2, ++statement_count);
+                    } else {
+                        lua_pushnil(L);
+                        lua_pushstring(L, mysql_error(db_obj->conn));
+                        free(query_buf);
+                        free(script_copy);
+                        return 2;
+                    }
+                }
+
+                while (mysql_next_result(db_obj->conn) == 0) {
+                    res = mysql_store_result(db_obj->conn);
+                    if (res) mysql_free_result(res);
+                }
+            }
+
+            query_buf[0] = '\0';
+            buf_len = 0;
+        }
+
+        line = next_line;
+    }
+
+    free(query_buf);
+    free(script_copy);
+
+    return 1;
+}
+
+// 5. Cerrar conexion
 static int l_close(lua_State *L) {
     LuaMariaDB *db_obj = (LuaMariaDB *)luaL_checkudata(L, 1, MARIADB_LUA_METATABLE);
     if (db_obj->conn) {
@@ -242,12 +395,13 @@ static int l_close(lua_State *L) {
 static const struct luaL_Reg db_methods[] = {
     {"query",       l_query},
     {"multi_query", l_multi_query},
+    {"execute", l_execute_script},
     {"close",       l_close},
     {"__gc",        l_close},
     {NULL, NULL}
 };
 
-// 5. Punto de entrada principal ampliado con cobertura total de tipos
+// 6. Punto de entrada principal ampliado con cobertura total de tipos
 int luaopen_cmariadb(lua_State *L) {
     register_sqlvalue_meta(L);
 
