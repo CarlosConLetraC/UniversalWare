@@ -395,7 +395,7 @@ static int l_close(lua_State *L) {
 static const struct luaL_Reg db_methods[] = {
     {"query",       l_query},
     {"multi_query", l_multi_query},
-    {"execute", l_execute_script},
+    {"execute",     l_execute_script},
     {"close",       l_close},
     {"__gc",        l_close},
     {NULL, NULL}
