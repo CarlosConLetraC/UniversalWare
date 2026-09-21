@@ -96,7 +96,7 @@ int l_request_respond(lua_State *L) {
     int status = luaL_checkinteger(L, 2);
     const char *body = luaL_checkstring(L, 3);
 
-    char header[512];
+    char header[CHAR_ARRAY_SIZE];
     int body_len = strlen(body);
     snprintf(header, sizeof(header), 
         "HTTP/1.1 %d OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: %d\r\nConnection: close\r\n\r\n", 
@@ -117,7 +117,7 @@ int l_request_respond(lua_State *L) {
     return 0;
 }
 
-// NUEVO: Método para servir archivos estáticos directamente desde el disco (ej. index.html)
+// Método para servir archivos estáticos directamente desde el disco
 int l_request_send_file(lua_State *L) {
     HttpRequest *req = (HttpRequest*)luaL_checkudata(L, 1, CHTTP_MT);
     if (req->client_sock < 0) return 0;

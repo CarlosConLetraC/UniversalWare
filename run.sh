@@ -79,4 +79,4 @@ fi
 #  3. LANZAMIENTO DEL BACKEND MODULAR
 # ==========================================
 prettyprint 0 "Iniciando servidor API modular en C/LuaJIT..."
-exec ./backend web/lua/ program.fetch.lua
+exec ./backend web/lua/

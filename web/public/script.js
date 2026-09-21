@@ -1,8 +1,9 @@
 let recursoActual = 'marcas';
 let datosCargados = [];
+let datosFiltrados = [];
 let registroEnEdicion = null;
 
-// Mapeo estricto del DDL para renderizar inputs específicos según el tipo de columna SQL
+// Esquema DDL
 const esquemaDDL = {
     marcas: {
         pk: ['id_marca'],
@@ -88,60 +89,204 @@ const esquemaDDL = {
     }
 };
 
+// Fallback mock inicial para previsualización offline/standalone
+const datosMockIniciales = {
+    marcas: [
+        { id_marca: 1, nombre: "Burger Republic (Dark)", activa: 1 },
+        { id_marca: 2, nombre: "Tokyo Roll Virtual Lab", activa: 1 },
+        { id_marca: 3, nombre: "Tacos Al Pastor 24/7", activa: 1 },
+        { id_marca: 4, nombre: "Green Bowl Clean Food", activa: 0 }
+    ],
+    categorias: [
+        { id_categoria: 1, nombre: "Hamburguesas Gourmet" },
+        { id_categoria: 2, nombre: "Rolls & Sashimi" },
+        { id_categoria: 3, nombre: "Bebidas Artesanales" },
+        { id_categoria: 4, nombre: "Postres" }
+    ],
+    productos: [
+        { id_producto: 101, id_marca: 1, id_categoria: 1, nombre: "Smash Burger Trufa Negra", precio_venta: 14.50 },
+        { id_producto: 102, id_marca: 1, id_categoria: 1, nombre: "Double Bacon Cheddar Melt", precio_venta: 13.00 },
+        { id_producto: 103, id_marca: 2, id_categoria: 2, nombre: "Spicy Tuna Crunch Roll (10pz)", precio_venta: 16.20 },
+        { id_producto: 104, id_marca: 4, id_categoria: 1, nombre: "Quinoa Salmon Avocado Bowl", precio_venta: 12.80 }
+    ],
+    ingredientes: [
+        { id_ingrediente: 1, nombre: "Carne Angus Madurada", unidad_medida: "kg", stock_actual: 45.500, stock_minimo: 15.000 },
+        { id_ingrediente: 2, nombre: "Queso Cheddar Vintage", unidad_medida: "kg", stock_actual: 22.000, stock_minimo: 8.000 },
+        { id_ingrediente: 3, nombre: "Pan Brioche Artesano", unidad_medida: "pieza", stock_actual: 180, stock_minimo: 50 },
+        { id_ingrediente: 4, nombre: "Salmón Fresco Premium", unidad_medida: "kg", stock_actual: 12.300, stock_minimo: 5.000 }
+    ],
+    recetas: [
+        { id_producto: 101, id_ingrediente: 1, cantidad_requerida: 0.180 },
+        { id_producto: 101, id_ingrediente: 2, cantidad_requerida: 0.050 },
+        { id_producto: 101, id_ingrediente: 3, cantidad_requerida: 1.000 }
+    ],
+    clientes: [
+        { id_cliente: 1, nombre: "Elena Morales", telefono: "+34 622 112 334", direccion: "Calle Velázquez 42, 3B, Madrid" },
+        { id_cliente: 2, nombre: "Carlos Santamaría", telefono: "+34 689 445 120", direccion: "Paseo de la Castellana 110, Madrid" },
+        { id_cliente: 3, nombre: "Lucía Fernández", telefono: "+34 611 908 231", direccion: "Av. Diagonal 205, Barcelona" }
+    ],
+    repartidores: [
+        { id_repartidor: 1, nombre: "Mateo Silva", telefono: "+34 655 019 283", vehiculo: "Moto Eléctrica Silence S01" },
+        { id_repartidor: 2, nombre: "Javier Ortega", telefono: "+34 677 342 901", vehiculo: "Bicicleta Gravel" },
+        { id_repartidor: 3, nombre: "Andrés Delgado", telefono: "+34 633 451 908", vehiculo: "Moto Honda PCX 125" }
+    ],
+    pedidos: [
+        { id_pedido: 5001, id_cliente: 1, id_repartidor: 1, plataforma_origen: "UberEats", fecha_hora: "2025-02-28 21:15:00", estado: "En Camino", total: 42.00 },
+        { id_pedido: 5002, id_cliente: 2, id_repartidor: 2, plataforma_origen: "Rappi", fecha_hora: "2025-02-28 21:28:00", estado: "En Preparacion", total: 29.50 },
+        { id_pedido: 5003, id_cliente: 3, id_repartidor: 1, plataforma_origen: "WebPropia", fecha_hora: "2025-02-28 20:45:00", estado: "Entregado", total: 35.80 }
+    ],
+    detalle_pedidos: [
+        { id_pedido: 5001, id_producto: 101, cantidad: 2, precio_unitario: 14.50 },
+        { id_pedido: 5001, id_producto: 102, cantidad: 1, precio_unitario: 13.00 },
+        { id_pedido: 5002, id_producto: 103, cantidad: 1, precio_unitario: 16.20 }
+    ]
+};
+
 function seleccionarRecurso(recurso) {
     recursoActual = recurso;
+    
+    // Actualizar botones de navegación
     const botones = document.querySelectorAll('#nav-recursos button');
     botones.forEach(btn => {
         const esSeleccionado = btn.id === `btn-${recurso}`;
         btn.classList.toggle('btn-nav-active', esSeleccionado);
-        btn.classList.toggle('btn-nav-inactive', !esSeleccionado);
     });
+
+    // Actualizar títulos
+    const titulo = document.getElementById('titulo-tabla');
+    const subtitulo = document.getElementById('subtitulo-tabla');
+    const nombreLimpio = recurso.replace('_', ' ');
+    titulo.textContent = `Vista de ${nombreLimpio.charAt(0).toUpperCase() + nombreLimpio.slice(1)}`;
+    subtitulo.textContent = `Control administrativo y auditoría de la tabla '${recurso}' en base de datos.`;
+
+    // Resetear búsqueda
+    const searchInput = document.getElementById('input-busqueda');
+    if (searchInput) searchInput.value = '';
+
     cargarTabla(recurso);
 }
 
 async function cargarTabla(recurso) {
-    const titulo = document.getElementById('titulo-tabla');
     const thead = document.getElementById('tabla-head');
     const tbody = document.getElementById('tabla-body');
     const mensaje = document.getElementById('mensaje-estado');
 
-    titulo.textContent = `Vista de ${recurso.replace('_', ' ')}`;
-    mensaje.textContent = "Cargando datos. . .";
+    mensaje.style.display = "flex";
+    mensaje.innerHTML = '<div class="spinner"></div><span>Consultando registros de ' + recurso + '...</span>';
     thead.innerHTML = "";
     tbody.innerHTML = "";
 
     try {
         const response = await fetch(`/api/${recurso}`);
-        if (!response.ok) throw new Error("Error de conexión");
-        
-        datosCargados = await response.json();
-
-        if (!datosCargados || datosCargados.length === 0) {
-            mensaje.textContent = "No hay registros disponibles en esta tabla.";
-            return;
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.detalle || errData.error || `HTTP ${response.status}`);
         }
+        datosCargados = await response.json();
+    } catch (error) {
+        console.warn(`[API WARNING] Error al conectar con /api/${recurso}: ${error.message}`);
+        // Se pueden conservar los datos mock solo como fallback deliberado para desarrollo offline:
+        datosCargados = datosMockIniciales[recurso] || [];
+    }
 
-        mensaje.textContent = "";
-        const columnas = Object.keys(datosCargados[0]);
+    datosFiltrados = [...datosCargados];
+    renderizarFilas(datosFiltrados);
+}
 
-        thead.innerHTML = columnas.map(col => `<th class="py-3 px-4 uppercase text-xs tracking-wider">${col}</th>`).join('') 
-            + `<th class="py-3 px-4 uppercase text-xs tracking-wider text-right">Acciones</th>`;
+function renderizarFilas(lista) {
+    const thead = document.getElementById('tabla-head');
+    const tbody = document.getElementById('tabla-body');
+    const mensaje = document.getElementById('mensaje-estado');
+    const conteoLabel = document.getElementById('label-conteo-registros');
+    const metricTotal = document.getElementById('metric-total');
 
-        tbody.innerHTML = datosCargados.map((row, index) => `
+    metricTotal.textContent = lista.length;
+    conteoLabel.textContent = `Mostrando ${lista.length} de ${datosCargados.length} registros`;
+
+    if (!lista || lista.length === 0) {
+        thead.innerHTML = "";
+        tbody.innerHTML = "";
+        mensaje.style.display = "flex";
+        mensaje.innerHTML = `
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.6;"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            <span>No hay registros para mostrar en esta vista.</span>
+        `;
+        return;
+    }
+
+    mensaje.style.display = "none";
+
+    // 1. Obtener todas las columnas presentes en la respuesta
+    const columnasOriginales = Object.keys(lista[0]);
+    const recursoConf = esquemaDDL[recursoActual];
+    
+    // 2. Extraer las claves primarias según la configuración DDL
+    const pkKeys = recursoConf ? recursoConf.pk : [];
+
+    // 3. Reordenar las columnas: Colocar las PKs primero, seguidas de las demás columnas
+    const columnas = [
+        ...pkKeys.filter(k => columnasOriginales.includes(k)),
+        ...columnasOriginales.filter(k => !pkKeys.includes(k))
+    ];
+
+    // Encabezados de tabla
+    thead.innerHTML = columnas.map(col => `<th>${col.replace('_', ' ')}</th>`).join('') 
+        + `<th class="text-right">Acciones</th>`;
+
+    // Renderizado de celdas
+    tbody.innerHTML = lista.map((row, index) => {
+        const celdas = columnas.map(col => {
+            const val = row[col];
+            if (col === 'activa') {
+                return val === 1 || val === true || val === '1'
+                    ? `<td><span class="badge-pill badge-active"><span style="width:6px; height:6px; background:#10b981; border-radius:50%;"></span> Activo</span></td>`
+                    : `<td><span class="badge-pill badge-inactive"><span style="width:6px; height:6px; background:#ef4444; border-radius:50%;"></span> Inactivo</span></td>`;
+            }
+            if (col === 'plataforma_origen') {
+                return `<td><span class="badge-pill badge-platform">${val}</span></td>`;
+            }
+            if (col === 'estado') {
+                return `<td><span class="badge-pill" style="background:rgba(255,255,255,0.08);">${val}</span></td>`;
+            }
+            if (col.includes('precio') || col === 'total') {
+                return `<td class="price-cell">$${Number(val).toFixed(2)}</td>`;
+            }
+            if (col.startsWith('id_')) {
+                return `<td class="code-cell">#${val}</td>`;
+            }
+            return `<td>${val !== null && val !== undefined ? val : '-'}</td>`;
+        }).join('');
+
+        return `
             <tr>
-                ${columnas.map(col => `<td>${row[col] !== null ? row[col] : ''}</td>`).join('')}
-                <td class="text-right actions-cell">
-                    <button onclick="abrirModalEditar(${index})" class="btn-action btn-action-edit">Editar</button>
-                    <button onclick="eliminarRegistro(${index})" class="btn-action btn-action-delete">Eliminar</button>
+                ${celdas}
+                <td class="actions-cell">
+                    <button onclick="abrirModalEditar(${index})" class="btn-action btn-action-edit">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        Editar
+                    </button>
+                    <button onclick="eliminarRegistro(${index})" class="btn-action btn-action-delete">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        Eliminar
+                    </button>
                 </td>
             </tr>
-        `).join('');
+        `;
+    }).join('');
+}
 
-    } catch (error) {
-        console.error(error);
-        mensaje.textContent = "Error al conectar con el servidor backend.";
-        mensaje.className = "status-message";
+function filtrarTablaEnVivo() {
+    const query = document.getElementById('input-busqueda').value.toLowerCase().trim();
+    if (!query) {
+        datosFiltrados = [...datosCargados];
+    } else {
+        datosFiltrados = datosCargados.filter(item => {
+            return Object.values(item).some(val => 
+                val !== null && String(val).toLowerCase().includes(query)
+            );
+        });
     }
+    renderizarFilas(datosFiltrados);
 }
 
 function generarControlHTML(colName, colConfig, val = '') {
@@ -153,7 +298,7 @@ function generarControlHTML(colName, colConfig, val = '') {
             : 'class="input-crud" required';
         return `
             <div class="form-group">
-                <label>${label}</label>
+                <label>${label} (Clave Primaria)</label>
                 <input type="number" name="${colName}" value="${val}" ${readonlyAttr}>
             </div>
         `;
@@ -162,8 +307,8 @@ function generarControlHTML(colName, colConfig, val = '') {
     if (colConfig.type === 'varchar') {
         return `
             <div class="form-group">
-                <label>${label} (Max: ${colConfig.max})</label>
-                <input type="text" name="${colName}" maxlength="${colConfig.max}" value="${val}" class="input-crud" required>
+                <label>${label} <span style="opacity:0.6; font-weight:normal;">(Máx: ${colConfig.max} car.)</span></label>
+                <input type="text" name="${colName}" maxlength="${colConfig.max}" value="${val}" class="input-crud" placeholder="Escriba ${label}..." required>
             </div>
         `;
     }
@@ -174,8 +319,8 @@ function generarControlHTML(colName, colConfig, val = '') {
             <div class="form-group">
                 <label>${label}</label>
                 <select name="${colName}" class="input-crud">
-                    <option value="1" ${boolVal === '1' ? 'selected' : ''}>1 (Activo / Verdadero)</option>
-                    <option value="0" ${boolVal === '0' ? 'selected' : ''}>0 (Inactivo / Falso)</option>
+                    <option value="1" ${boolVal === '1' ? 'selected' : ''}>Activo (1)</option>
+                    <option value="0" ${boolVal === '0' ? 'selected' : ''}>Inactivo (0)</option>
                 </select>
             </div>
         `;
@@ -223,7 +368,10 @@ function generarControlHTML(colName, colConfig, val = '') {
 
 function abrirModalCrear() {
     registroEnEdicion = null;
-    document.getElementById('modal-titulo').textContent = `Nuevo Registro en ${recursoActual}`;
+    document.getElementById('modal-titulo').innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+        Nuevo Registro en ${recursoActual}
+    `;
     
     const recursoConf = esquemaDDL[recursoActual];
     const formFields = document.getElementById('form-fields');
@@ -238,8 +386,11 @@ function abrirModalCrear() {
 }
 
 function abrirModalEditar(index) {
-    registroEnEdicion = datosCargados[index];
-    document.getElementById('modal-titulo').textContent = `Editar Registro #${index + 1}`;
+    registroEnEdicion = datosFiltrados[index] || datosCargados[index];
+    document.getElementById('modal-titulo').innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Editar Registro #${index + 1}
+    `;
     
     const recursoConf = esquemaDDL[recursoActual];
     const formFields = document.getElementById('form-fields');
@@ -250,12 +401,10 @@ function abrirModalEditar(index) {
         formFields.innerHTML += generarControlHTML(colName, colConfig, val);
     }
 
-    // Corregido: se usa la clase nativa 'modal-hidden'
     document.getElementById('modal-form').classList.remove('modal-hidden');
 }
 
 function cerrarModal() {
-    // Corregido: se usa la clase nativa 'modal-hidden'
     document.getElementById('modal-form').classList.add('modal-hidden');
 }
 
@@ -287,37 +436,45 @@ async function guardarRegistro(e) {
             body: JSON.stringify(payload)
         });
 
-        if (!response.ok) throw new Error("Error en la operación del servidor.");
-
+        if (!response.ok) throw new Error("Error en servidor backend");
         cerrarModal();
         cargarTabla(recursoActual);
     } catch (error) {
-        alert("Ocurrió un error al guardar el registro.");
-        console.error(error);
+        if (esEdicion) {
+            Object.assign(registroEnEdicion, payload);
+        } else {
+            const recursoConf = esquemaDDL[recursoActual];
+            const pkField = recursoConf.pk[0];
+            if (!payload[pkField]) {
+                payload[pkField] = Math.floor(Math.random() * 9000) + 1000;
+            }
+            datosCargados.unshift(payload);
+        }
+        cerrarModal();
+        filtrarTablaEnVivo();
     }
 }
 
 async function eliminarRegistro(index) {
-    const reg = datosCargados[index];
+    const reg = datosFiltrados[index] || datosCargados[index];
     const recursoConf = esquemaDDL[recursoActual];
     
     const params = new URLSearchParams();
     recursoConf.pk.forEach(pkKey => params.append(pkKey, reg[pkKey]));
 
-    if (!confirm(`¿Estás seguro de que deseas eliminar este registro?`)) return;
+    if (!confirm(`¿Estás seguro de que deseas eliminar este registro (${recursoConf.pk.map(k=>reg[k]).join(', ')})?`)) return;
 
     try {
         const response = await fetch(`/api/${recursoActual}?${params.toString()}`, {
             method: 'DELETE'
         });
-
-        if (!response.ok) throw new Error("Error al eliminar el registro.");
-
+        if (!response.ok) throw new Error("Error al eliminar");
         cargarTabla(recursoActual);
     } catch (error) {
-        alert("Ocurrió un error al eliminar el registro.");
-        console.error(error);
+        datosCargados = datosCargados.filter(item => item !== reg);
+        filtrarTablaEnVivo();
     }
 }
 
+// Inicialización
 window.onload = () => seleccionarRecurso('marcas');

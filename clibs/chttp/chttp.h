@@ -1,11 +1,10 @@
-#ifndef CHTTP_H
-    #define CHTTP_H
+#pragma once
+#define CHAR_ARRAY_SIZE 1024
 
-    #include <lua.h>
-    #include <lauxlib.h>
-    #include <lualib.h>
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
 
-    #define CHTTP_MT "CHTTP_Request_Meta"
+#define CHTTP_MT "CHTTP_Request_Meta"
 
-    int luaopen_chttp(lua_State *L);
-#endif
+int luaopen_chttp(lua_State *L);

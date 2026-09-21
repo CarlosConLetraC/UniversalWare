@@ -3,57 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UniversalWare - Dark Kitchen Panel</title>
-    <!-- Estilos CSS Puros Nativos -->
+    <title>Proyecto Final - Dark Kitchen Management System</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <div class="container">
-        <!-- Título principal -->
-        <h1 class="main-title">Panel de Control - Dark Kitchen</h1>
-
-        <!-- Botones de navegación / Selección de tablas -->
-        <div class="nav-recursos" id="nav-recursos">
-            <button onclick="seleccionarRecurso('marcas')" id="btn-marcas" class="btn-nav btn-nav-active">Marcas</button>
-            <button onclick="seleccionarRecurso('categorias')" id="btn-categorias" class="btn-nav btn-nav-inactive">Categorías</button>
-            <button onclick="seleccionarRecurso('productos')" id="btn-productos" class="btn-nav btn-nav-inactive">Productos</button>
-            <button onclick="seleccionarRecurso('ingredientes')" id="btn-ingredientes" class="btn-nav btn-nav-inactive">Ingredientes</button>
-            <button onclick="seleccionarRecurso('recetas')" id="btn-recetas" class="btn-nav btn-nav-inactive">Recetas</button>
-            <button onclick="seleccionarRecurso('clientes')" id="btn-clientes" class="btn-nav btn-nav-inactive">Clientes</button>
-            <button onclick="seleccionarRecurso('repartidores')" id="btn-repartidores" class="btn-nav btn-nav-inactive">Repartidores</button>
-            <button onclick="seleccionarRecurso('pedidos')" id="btn-pedidos" class="btn-nav btn-nav-inactive">Pedidos</button>
-            <button onclick="seleccionarRecurso('detalle_pedidos')" id="btn-detalle_pedidos" class="btn-nav btn-nav-inactive">Detalle de pedidos</button>
-        </div>
-
-        <!-- Contenedor de la Tabla -->
-        <div class="card-container">
-            <div class="card-header">
-                <h2 id="titulo-tabla" class="table-title">Catálogo de Marcas</h2>
-                <button onclick="abrirModalCrear()" class="btn-create">+ Nuevo Registro</button>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand-header">
+                <div class="brand-logo-badge">
+                    <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                </div>
+                <div class="brand-info">
+                    <span class="brand-name">Proyecto Final</span>
+                    <span class="brand-subtitle">Dark Kitchen</span>
+                </div>
             </div>
-            
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr id="tabla-head"></tr>
-                    </thead>
-                    <tbody id="tabla-body"></tbody>
-                </table>
+
+            <div class="nav-section-label">Módulos & Tablas</div>
+            <nav class="nav-recursos" id="nav-recursos">
+                <button onclick="seleccionarRecurso('marcas')" id="btn-marcas" class="btn-nav btn-nav-active">
+                    <svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                    <span>Marcas</span>
+                </button>
+                <button onclick="seleccionarRecurso('categorias')" id="btn-categorias" class="btn-nav">
+                    <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    <span>Categorías</span>
+                </button>
+                <button onclick="seleccionarRecurso('productos')" id="btn-productos" class="btn-nav">
+                    <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                    <span>Productos</span>
+                </button>
+                <button onclick="seleccionarRecurso('ingredientes')" id="btn-ingredientes" class="btn-nav">
+                    <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                    <span>Ingredientes & Stock</span>
+                </button>
+                <button onclick="seleccionarRecurso('recetas')" id="btn-recetas" class="btn-nav">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <span>Recetas / Fichas</span>
+                </button>
+                <button onclick="seleccionarRecurso('clientes')" id="btn-clientes" class="btn-nav">
+                    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span>Clientes</span>
+                </button>
+                <button onclick="seleccionarRecurso('repartidores')" id="btn-repartidores" class="btn-nav">
+                    <svg viewBox="0 0 24 24"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>
+                    <span>Repartidores</span>
+                </button>
+                <button onclick="seleccionarRecurso('pedidos')" id="btn-pedidos" class="btn-nav">
+                    <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <span>Pedidos en Vivo</span>
+                </button>
+                <button onclick="seleccionarRecurso('detalle_pedidos')" id="btn-detalle_pedidos" class="btn-nav">
+                    <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    <span>Detalle de Pedidos</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="status-dot"></div>
+                <span class="status-text">Backend API conectado</span>
             </div>
-            <div id="mensaje-estado" class="status-message">Cargando datos. . .</div>
-        </div>
+        </aside>
+
+        <!-- Main Viewport -->
+        <main class="main-viewport">
+            <!-- Header section -->
+            <header class="top-bar">
+                <div class="view-title-group">
+                    <h1>
+                        <span id="titulo-tabla">Vista de Marcas</span>
+                        <span class="table-badge" id="badge-tipo">Activo</span>
+                    </h1>
+                    <p class="view-subtitle" id="subtitulo-tabla">Gestiona los registros del catálogo central en tiempo real.</p>
+                </div>
+            </header>
+
+            <!-- Quick metrics overview -->
+            <section class="quick-metrics">
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <p>Total Registros</p>
+                        <h3 id="metric-total">--</h3>
+                    </div>
+                    <div class="metric-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <p>Estado Operativo</p>
+                        <h3 style="color: #34d399; font-size: 1.15rem;">Óptimo</h3>
+                    </div>
+                    <div class="metric-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <p>Control DDL</p>
+                        <h3 style="color: #38bdf8; font-size: 1.15rem;">Validado</h3>
+                    </div>
+                    <div class="metric-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Table Container Card -->
+            <div class="card-container">
+                <div class="card-header">
+                    <div class="search-and-filters">
+                        <div class="search-box">
+                            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" id="input-busqueda" oninput="filtrarTablaEnVivo()" placeholder="Buscar por cualquier columna..." class="input-search">
+                        </div>
+                    </div>
+                    <button onclick="abrirModalCrear()" class="btn-create">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        <span>Nuevo Registro</span>
+                    </button>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr id="tabla-head"></tr>
+                        </thead>
+                        <tbody id="tabla-body"></tbody>
+                    </table>
+                    <div id="mensaje-estado" class="status-message">
+                        <div class="spinner"></div>
+                        <span>Cargando datos del sistema...</span>
+                    </div>
+                </div>
+
+                <div class="table-footer">
+                    <span id="label-conteo-registros">Mostrando 0 registros</span>
+                    <span>Modo de producción SQL Seguro</span>
+                </div>
+            </div>
+        </main>
     </div>
 
     <!-- Modal CRUD (Crear / Editar) -->
     <div id="modal-form" class="modal-backdrop modal-hidden">
         <div class="modal-content">
-            <h3 id="modal-titulo" class="modal-title">Nuevo Registro</h3>
+            <div class="modal-header">
+                <h3 id="modal-titulo" class="modal-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+                    Nuevo Registro
+                </h3>
+                <button type="button" onclick="cerrarModal()" class="btn-close-modal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
             <form id="crud-form" onsubmit="guardarRegistro(event)">
                 <div id="form-fields" class="form-fields-container"></div>
                 <div class="modal-actions">
                     <button type="button" onclick="cerrarModal()" class="btn-cancel">Cancelar</button>
-                    <button type="submit" class="btn-create">Guardar</button>
+                    <button type="submit" class="btn-create">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Guardar Registro</span>
+                    </button>
                 </div>
             </form>
         </div>

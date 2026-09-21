@@ -116,8 +116,8 @@ local function rand_elt(arr) return arr[math.random(#arr)] end
 local function rand_num(min, max) return math.random(min, max) end
 
 local nombres_personas = {"Carlos", "Ana", "Luis", "María", "Jorge", "Sofía", "Diego", "Valentina", "Mateo", "Camila", "Constanza", "Regina", "Sara", "Natalia", "Mario", "Rodrigo", "Luciano", "José", "Josue", "Dahir", "Hatuei", "Valeria", "Jessica", "Leonardo", "Ana", "Guadalupe", "Adriana", "David", "Gustavo", "Ricardo"}
-local apellidos = {"Mendoza", "Gómez", "Torres", "Ortiz", "Silva", "Hernández", "Ramírez", "Juárez", "Ortega", "Ríos"}
-local calles = {"Av. Universidad", "Calle San Jerónimo", "Insurgentes Sur", "Reforma", "División del Norte", "Av. Juárez"}
+local apellidos = {"Mendoza", "Gómez", "Torres", "Ortiz", "Silva", "Hernández", "Ramírez", "Juárez", "Ortega", "Ríos", "Bustamante", "De la mora", "Herrera", "Herránz", "Xanath", "Esquivel", "Ascencio", "Olea", "Radilla", "Sánchez", "Morales", "Diaz", "Aguilar", "Moreno", "Gordillo", "Varga", "Cruz", "León", "Zapata", "Pérez", "Alcazar", "Castro", "Alvares"}
+local calles = {"Av. Universidad", "Calle San Jerónimo", "Insurgentes Sur", "Reforma", "División del Norte", "Av. Juárez", "Av. Cuauhtémoc", "Calle 5 de Mayo", "Paseo de la Reforma", "Calzada de Tlalpan", "Av. Chapultepec", "Eje Central Lázaro Cárdenas", "Av. Coyoacán", "Calle Madero", "Av. Insurgentes Centro", "Periférico Sur", "Periférico Norte", "Av. Patriotismo", "Av. Revolución", "Calle Álvaro Obregón", "Av. Tamaulipas", "Calle Michoacán", "Av. Mazatlán", "Calle Sonora", "Av. Nuevo León", "Calle Orizaba", "Calle Córdoba", "Calle Mérida", "Calle Durango", "Calle Colima", "Calle Zacatecas", "Av. Insurgentes Sur", "Calle Puebla", "Av. Álvaro Obregón", "Calle Querétaro", "Calle San Luis Potosí", "Calle Guanajuato", "Calle Tonalá", "Calle Monterrey", "Calle Medellín", "Calle 10", "Calle 12", "Calle 14", "Calle 16", "Calle 18", "Calle 20", "Av. Insurgentes Norte", "Calzada Legaria", "Av. Marina Nacional", "Av. Ejército Nacional", "Av. Homero", "Av. Horacio", "Av. Presidente Masaryk", "Calle Arquímedes", "Calle Tennyson", "Calle Newton"}
 local marcas_cat = {"Burger Empire", "Taco Express", "Wok & Roll", "Pizza Lab", "Green Bowl Salads"}
 local categorias_cat = {"Hamburguesas", "Tacos y Antojitos", "Comida Asiática", "Pizzas Artesanales", "Ensaladas y Bebidas"}
 local plataformas = {"UberEats", "Rappi", "DidiFood", "WebPropia"}
@@ -177,8 +177,8 @@ for i = 1, 10, 1 do
 end
 
 -- E. Clientes y Repartidores
-for i = 1, 8, 1 do
-    local nom_cli = string.format("%s %s", rand_elt(nombres_personas), rand_elt(apellidos))
+for i = 1, 32, 1 do
+    local nom_cli = string.format("%s %s %s", rand_elt(nombres_personas), rand_elt(apellidos), rand_elt(apellidos))
     local dir = string.format("%s %d", rand_elt(calles), rand_num(10, 999))
     
     -- Añadidas comillas simples para nombre, teléfono y dirección
@@ -188,12 +188,12 @@ for i = 1, 8, 1 do
         tostring(SqlValue.string(dir))
     ))
 
-    local nom_rep = string.format("%s %s", rand_elt(nombres_personas), rand_elt(apellidos))
+    local nom_rep = string.format("%s %s %s", rand_elt(nombres_personas), rand_elt(apellidos), rand_elt(apellidos))
     
     -- Añadidas comillas simples para nombre, teléfono y vehículo (quitando las comillas del arreglo original de vehiculos si las tenía)
     table.insert(repartidores_vals, string.format("('%s', '%s', '%s')", 
-        tostring(SqlValue.string(nom_rep)), 
-        tostring(SqlValue.string(string.format("555%07d", math.random(0, 9999999)))), 
+        tostring(SqlValue.string(nom_rep)),
+        tostring(SqlValue.string(string.format("555%07d", math.random(0, 9999999)))),
         tostring(SqlValue.string(rand_elt(vehiculos)))
     ))
 end
