@@ -14,7 +14,7 @@ static int server_fd = -1;
 typedef struct {
     int client_sock;
     char method[16];
-    char path[256];
+    char path[CHAR_ARRAY_SIZE];
     char *body;
 } HttpRequest;
 
@@ -45,7 +45,7 @@ int l_chttp_accept(lua_State *L) {
         return 1;
     }
 
-    char buffer[4096] = {0};
+    char buffer[BUFFER_SIZE] = {0};
     ssize_t bytes_read = read(client_sock, buffer, sizeof(buffer) - 1);
     
     if (bytes_read <= 0) {
@@ -129,7 +129,7 @@ int l_request_send_file(lua_State *L) {
     FILE *f = fopen(filepath, "rb");
     if (!f) {
         const char *not_found = "{\"error\":\"Archivo no encontrado en el servidor\"}";
-        char header[256];
+        char header[CHAR_ARRAY_SIZE];
         snprintf(header, sizeof(header), 
             "HTTP/1.1 404 Not Found\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nConnection: close\r\n\r\n", 
             strlen(not_found));
@@ -144,13 +144,13 @@ int l_request_send_file(lua_State *L) {
     long file_size = ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    char header[512];
+    char header[CHAR_ARRAY_SIZE];
     snprintf(header, sizeof(header), 
         "HTTP/1.1 %d OK\r\nContent-Type: %s\r\nContent-Length: %ld\r\nConnection: close\r\n\r\n", 
         status, content_type, file_size);
     (void)write(req->client_sock, header, strlen(header));
 
-    char buffer[8192];
+    char buffer[BUFFER_SIZE];
     size_t bytes_read;
     while ((bytes_read = fread(buffer, 1, sizeof(buffer), f)) > 0)
         (void)write(req->client_sock, buffer, bytes_read);
