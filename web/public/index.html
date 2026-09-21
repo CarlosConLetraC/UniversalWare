@@ -4,92 +4,61 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UniversalWare - Dark Kitchen Panel</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Estilos CSS Puros Nativos -->
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col items-center py-10">
+<body>
 
-    <div class="w-full max-w-5xl px-4">
-        <h1 class="text-3xl font-bold mb-6 text-sky-400">Panel de Control - Dark Kitchen</h1>
+    <div class="container">
+        <!-- Título principal -->
+        <h1 class="main-title">Panel de Control - Dark Kitchen</h1>
 
         <!-- Botones de navegación / Selección de tablas -->
-        <div class="flex flex-wrap gap-2 mb-6">
-            <button onclick="cargarTabla('marcas')" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 rounded font-medium transition">Marcas</button>
-            <button onclick="cargarTabla('categorias')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Categorias</button>
-            <button onclick="cargarTabla('productos')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Productos</button>
-            <button onclick="cargarTabla('ingredientes')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Ingredientes</button>
-            <button onclick="cargarTabla('recetas')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Recetas</button>
-            <button onclick="cargarTabla('clientes')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Clientes</button>
-            <button onclick="cargarTabla('repartidores')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Repartidores</button>
-            <button onclick="cargarTabla('pedidos')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Pedidos</button>
-            <button onclick="cargarTabla('detalle_pedidos')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded font-medium transition border border-slate-700">Detalle de pedidos</button>
+        <div class="nav-recursos" id="nav-recursos">
+            <button onclick="seleccionarRecurso('marcas')" id="btn-marcas" class="btn-nav btn-nav-active">Marcas</button>
+            <button onclick="seleccionarRecurso('categorias')" id="btn-categorias" class="btn-nav btn-nav-inactive">Categorías</button>
+            <button onclick="seleccionarRecurso('productos')" id="btn-productos" class="btn-nav btn-nav-inactive">Productos</button>
+            <button onclick="seleccionarRecurso('ingredientes')" id="btn-ingredientes" class="btn-nav btn-nav-inactive">Ingredientes</button>
+            <button onclick="seleccionarRecurso('recetas')" id="btn-recetas" class="btn-nav btn-nav-inactive">Recetas</button>
+            <button onclick="seleccionarRecurso('clientes')" id="btn-clientes" class="btn-nav btn-nav-inactive">Clientes</button>
+            <button onclick="seleccionarRecurso('repartidores')" id="btn-repartidores" class="btn-nav btn-nav-inactive">Repartidores</button>
+            <button onclick="seleccionarRecurso('pedidos')" id="btn-pedidos" class="btn-nav btn-nav-inactive">Pedidos</button>
+            <button onclick="seleccionarRecurso('detalle_pedidos')" id="btn-detalle_pedidos" class="btn-nav btn-nav-inactive">Detalle de pedidos</button>
         </div>
 
         <!-- Contenedor de la Tabla -->
-        <div class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-6 shadow-xl backdrop-blur-md">
-            <h2 id="titulo-tabla" class="text-xl font-semibold mb-4 text-slate-200 capitalize">Catálogo de Productos</h2>
+        <div class="card-container">
+            <div class="card-header">
+                <h2 id="titulo-tabla" class="table-title">Catálogo de Marcas</h2>
+                <button onclick="abrirModalCrear()" class="btn-create">+ Nuevo Registro</button>
+            </div>
             
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
+            <div class="table-wrapper">
+                <table>
                     <thead>
-                        <tr id="tabla-head" class="border-b border-slate-700 text-slate-400 text-sm">
-                            <!-- Las columnas se generan dinámicamente -->
-                        </tr>
+                        <tr id="tabla-head"></tr>
                     </thead>
-                    <tbody id="tabla-body" class="divide-y divide-slate-700/50 text-sm">
-                        <!-- Los datos se inyectan mediante JavaScript -->
-                    </tbody>
+                    <tbody id="tabla-body"></tbody>
                 </table>
             </div>
-            <div id="mensaje-estado" class="text-center py-6 text-slate-400">Cargando datos. . .</div>
+            <div id="mensaje-estado" class="status-message">Cargando datos. . .</div>
         </div>
     </div>
 
-    <script>
-        async function cargarTabla(recurso) {
-            const titulo = document.getElementById('titulo-tabla');
-            const thead = document.getElementById('tabla-head');
-            const tbody = document.getElementById('tabla-body');
-            const mensaje = document.getElementById('mensaje-estado');
+    <!-- Modal CRUD (Crear / Editar) -->
+    <div id="modal-form" class="modal-backdrop modal-hidden">
+        <div class="modal-content">
+            <h3 id="modal-titulo" class="modal-title">Nuevo Registro</h3>
+            <form id="crud-form" onsubmit="guardarRegistro(event)">
+                <div id="form-fields" class="form-fields-container"></div>
+                <div class="modal-actions">
+                    <button type="button" onclick="cerrarModal()" class="btn-cancel">Cancelar</button>
+                    <button type="submit" class="btn-create">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-            titulo.textContent = `Vista de ${recurso.replace('_', ' ')}`;
-            mensaje.textContent = "Cargando datos. . .";
-            thead.innerHTML = "";
-            tbody.innerHTML = "";
-
-            try {
-                // Hacemos el GET al endpoint correspondiente (soporta /api/ o directo)
-                const response = await fetch(`/api/${recurso}`);
-                if (!response.ok) throw new Error("Error al conectar con el servidor backend.");
-                
-                const data = await response.json();
-
-                if (!data || data.length === 0) {
-                    mensaje.textContent = "No hay registros disponibles en esta tabla.";
-                    return;
-                }
-
-                mensaje.textContent = "";
-
-                // Generar dinámicamente las cabeceras basándose en las llaves del primer objeto
-                const columnas = Object.keys(data[0]);
-                thead.innerHTML = columnas.map(col => `<th class="py-3 px-4 uppercase text-xs tracking-wider">${col}</th>`).join('');
-
-                // Generar dinámicamente las filas de datos
-                tbody.innerHTML = data.map(row => `
-                    <tr class="hover:bg-slate-700/30 transition">
-                        ${columnas.map(col => `<td class="py-3 px-4 text-slate-300">${row[col] !== null ? row[col] : ''}</td>`).join('')}
-                    </tr>
-                `).join('');
-
-            } catch (error) {
-                console.error(error);
-                mensaje.textContent = "Error al conectar con el servidor backend.";
-                mensaje.className = "text-center py-6 text-red-400 font-medium";
-            }
-        }
-
-        // Cargar productos por defecto al abrir la página
-        window.onload = () => cargarTabla('marcas');
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>

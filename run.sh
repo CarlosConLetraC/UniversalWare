@@ -7,29 +7,19 @@ function prettyprint() {
     local packed=("$@")
 
     case $level in
-        0)
-            printf "\e[0;36m[INFO]:\e[0m %s\n" "${packed[*]}"
-        ;;
-        1)
-            printf "\e[0;33m[WARN]:\e[0m %s\n" "${packed[*]}"
-        ;;
-        2|*)
-            printf "\e[0;31m[FAIL]:\e[0m %s\n" "${packed[*]}"
-        ;;
+        0) printf "\e[0;36m[INFO]:\e[0m %s\n" "${packed[*]}" ;;
+        1) printf "\e[0;33m[WARN]:\e[0m %s\n" "${packed[*]}" ;;
+        2|*) printf "\e[0;31m[FAIL]:\e[0m %s\n" "${packed[*]}" ;;
     esac
 }
 
 if [ ! -f "/usr/bin/luajit" ] || ! luajit -v | grep -q "2.1.178"; then
 	prettyprint 0 "Compilando la versión más reciente de LuaJIT desde la fuente oficial. . ."
-
 	cd /tmp
 	git clone https://github.com/LuaJIT/LuaJIT.git
 	cd LuaJIT
-
-	# Compilar e instalar globalmente en el contenedor
 	make PREFIX=/usr
 	sudo make install PREFIX=/usr
-
 	cd /tmp
 	rm -rf LuaJIT
 fi
@@ -52,27 +42,27 @@ if ! command -v nginx >/dev/null 2>&1; then
 fi
 
 PROJECT_ROOT="$PWD"
-# Ajusta esta ruta si tu index.html está directamente en web/ o en web/public/
-HTML_SOURCE="$PROJECT_ROOT/web/index.html" 
+PUBLIC_DIR="$PROJECT_ROOT/web/public"
 NGINX_CONF_SOURCE="$PROJECT_ROOT/web/nginx.conf"
 NGINX_WEB_DIR="/var/www/html"
 
 prettyprint 0 "Desplegando configuración de Nginx..."
 sudo cp "$NGINX_CONF_SOURCE" /etc/nginx/nginx.conf
 
-prettyprint 0 "Desplegando archivos estáticos hacia el servidor web..."
+prettyprint 0 "Desplegando todos los recursos estáticos (HTML, JS, CSS) desde web/public..."
 sudo mkdir -p "$NGINX_WEB_DIR"
-if [ -f "$HTML_SOURCE" ]; then
-    sudo cp "$HTML_SOURCE" "$NGINX_WEB_DIR/index.html"
+
+if [ -d "$PUBLIC_DIR" ]; then
+    sudo cp -r "$PUBLIC_DIR"/* "$NGINX_WEB_DIR/"
 else
-    prettyprint 1 "No se encontró index.html en $HTML_SOURCE, omitiendo copia automática."
+    prettyprint 1 "No se encontró el directorio $PUBLIC_DIR"
 fi
 
-# Permisos seguros estándar para Nginx
+# Permisos de lectura y ejecución para el usuario web
 sudo chmod 755 /var
 sudo chmod 755 /var/www
 sudo chmod 755 /var/www/html
-[ -f "$NGINX_WEB_DIR/index.html" ] && sudo chmod 644 "$NGINX_WEB_DIR/index.html"
+sudo chmod -R 644 "$NGINX_WEB_DIR"/* || true
 
 # Validar y reiniciar Nginx
 if sudo nginx -t >/dev/null 2>&1; then
@@ -89,5 +79,4 @@ fi
 #  3. LANZAMIENTO DEL BACKEND MODULAR
 # ==========================================
 prettyprint 0 "Iniciando servidor API modular en C/LuaJIT..."
-# Pasamos la ruta 'web/lua/' como base para que el sistema de 'require' encuentre la carpeta 'fetch/'
 exec ./backend web/lua/ program.fetch.lua

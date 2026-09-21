@@ -51,7 +51,7 @@ local ddl_schema = [[
     CREATE TABLE IF NOT EXISTS ingredientes (
         id_ingrediente INT AUTO_INCREMENT PRIMARY KEY,
         nombre VARCHAR(100) NOT NULL UNIQUE,
-        unidad_medida VARCHAR(20) NOT NULL,
+        unidad_medida ENUM('kg', 'gr', 'pieza') NOT NULL,
         stock_actual DECIMAL(10,3) NOT NULL DEFAULT 0.000 CHECK (stock_actual >= 0),
         stock_minimo DECIMAL(10,3) NOT NULL DEFAULT 1.000
     ) ENGINE=InnoDB;
@@ -115,7 +115,7 @@ local SqlValue = cmariadb.SqlValue
 local function rand_elt(arr) return arr[math.random(#arr)] end
 local function rand_num(min, max) return math.random(min, max) end
 
-local nombres_personas = {"Carlos", "Ana", "Luis", "María", "Jorge", "Sofía", "Diego", "Valentina", "Mateo", "Camila"}
+local nombres_personas = {"Carlos", "Ana", "Luis", "María", "Jorge", "Sofía", "Diego", "Valentina", "Mateo", "Camila", "Constanza", "Regina", "Sara", "Natalia", "Mario", "Rodrigo", "Luciano", "José", "Josue", "Dahir", "Hatuei", "Valeria", "Jessica", "Leonardo", "Ana", "Guadalupe", "Adriana", "David", "Gustavo", "Ricardo"}
 local apellidos = {"Mendoza", "Gómez", "Torres", "Ortiz", "Silva", "Hernández", "Ramírez", "Juárez", "Ortega", "Ríos"}
 local calles = {"Av. Universidad", "Calle San Jerónimo", "Insurgentes Sur", "Reforma", "División del Norte", "Av. Juárez"}
 local marcas_cat = {"Burger Empire", "Taco Express", "Wok & Roll", "Pizza Lab", "Green Bowl Salads"}

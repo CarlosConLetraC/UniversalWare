@@ -1,0 +1,328 @@
+/* ==========================================
+   1. VARIABLES DE COLOR Y ESQUEMA GLOBAL
+   ========================================== */
+:root {
+    --bg-main: #032e2b;            /* Fondo verde oscuro profundo */
+    --bg-card: #081d1c;            /* Fondo de contenedor/tabla */
+    --bg-modal: #052321;           /* Fondo de modal */
+    --bg-input: #021a18;           /* Fondo de campos de texto */
+    
+    --border-color: #0d423e;       /* Bordes principales */
+    --border-hover: #15625c;       /* Bordes al enfocar/hover */
+    
+    --text-primary: #f1f5f9;       /* Texto principal claro */
+    --text-muted: #94a3b8;         /* Texto secundario */
+    --text-accent: #34d399;        /* Verde esmeralda de contraste para títulos */
+    
+    --btn-active: #047857;         /* Botón activo verde */
+    --btn-active-hover: #059669;   
+    --btn-inactive: #082a28;       /* Botón inactivo verde oscuro */
+    --btn-inactive-hover: #0c3e3b; 
+    
+    --btn-edit: #d97706;           /* Botón Editar (Ámbar) */
+    --btn-edit-hover: #b45309;
+    --btn-delete: #e11d48;         /* Botón Eliminar (Rosa/Rojo) */
+    --btn-delete-hover: #be123c;
+    --btn-create: #0d9488;         /* Botón Nuevo Registro (Teal) */
+    --btn-create-hover: #0f766e;
+}
+
+/* Base global */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 2.5rem 1rem;
+}
+
+.container {
+    width: 100%;
+    max-width: 1150px;
+}
+
+/* Título */
+.main-title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--text-accent);
+    margin-bottom: 1.5rem;
+}
+
+/* ==========================================
+   2. NAVEGACIÓN Y BOTONES DE RECURSOS
+   ========================================== */
+.nav-recursos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.btn-nav {
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    border: 1px solid transparent;
+    color: var(--text-primary);
+}
+
+.btn-nav-active {
+    background-color: var(--btn-active);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.btn-nav-active:hover {
+    background-color: var(--btn-active-hover);
+}
+
+.btn-nav-inactive {
+    background-color: var(--btn-inactive);
+    border-color: var(--border-color);
+    color: var(--text-muted);
+}
+
+.btn-nav-inactive:hover {
+    background-color: var(--btn-inactive-hover);
+    color: var(--text-primary);
+}
+
+/* ==========================================
+   3. TARJETA PRINCIPAL Y TABLA CRUD
+   ========================================== */
+.card-container {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.table-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.btn-create {
+    background-color: var(--btn-create);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-create:hover {
+    background-color: var(--btn-create-hover);
+}
+
+/* Tabla nativa */
+.table-wrapper {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.875rem;
+}
+
+thead tr {
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+th, td {
+    padding: 0.75rem 1rem;
+}
+
+tbody tr {
+    border-bottom: 1px solid rgba(13, 66, 62, 0.4);
+    transition: background-color 0.15s ease;
+}
+
+tbody tr:hover {
+    background-color: rgba(21, 98, 92, 0.15);
+}
+
+.text-right {
+    text-align: right;
+}
+
+.actions-cell {
+    white-space: nowrap;
+}
+
+/* Botones dentro de la tabla */
+.btn-action {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    border: none;
+    cursor: pointer;
+    color: white;
+    margin-left: 0.25rem;
+    transition: opacity 0.2s;
+}
+
+.btn-action-edit {
+    background-color: var(--btn-edit);
+}
+.btn-action-edit:hover { background-color: var(--btn-edit-hover); }
+
+.btn-action-delete {
+    background-color: var(--btn-delete);
+}
+.btn-action-delete:hover { background-color: var(--btn-delete-hover); }
+
+/* Estado de carga */
+.status-message {
+    text-align: center;
+    padding: 1.5rem 0;
+    color: var(--text-muted);
+}
+
+/* ==========================================
+   4. MODAL Y CONTROLES DE FORMULARIO
+   ========================================== */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(2, 24, 22, 0.85);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 999;
+}
+
+.modal-hidden {
+    display: none !important;
+}
+
+.modal-content {
+    background-color: var(--bg-modal);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.7);
+}
+
+.modal-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-accent);
+    margin-bottom: 1rem;
+}
+
+.form-fields-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 380px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.input-crud {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input-crud:focus {
+    border-color: var(--text-accent);
+}
+
+.input-crud-readonly {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background-color: rgba(2, 26, 24, 0.5);
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    cursor: not-allowed;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-cancel {
+    background-color: var(--btn-inactive);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+.btn-cancel:hover { background-color: var(--btn-inactive-hover); }
+
+/* Scrollbar personalizado */
+.form-fields-container::-webkit-scrollbar {
+    width: 6px;
+}
+.form-fields-container::-webkit-scrollbar-track {
+    background: var(--bg-card);
+    border-radius: 4px;
+}
+.form-fields-container::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+.form-fields-container::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hover);
+}

@@ -1,89 +1,48 @@
 local M = {}
 
--- 1. GET: Listar o consultar registros
-function M.get(db, json, sanitizar, peticion)
-    local query = "SELECT * FROM productos;" -- Reemplaza con tu tabla
-    local res, err = db:query(query)
-    
-    if not res then
-        peticion:respond(500, json.encode({ error = "Error ejecutando query", detalle = tostring(err) }))
-        return
-    end
-
-    peticion:respond(200, json.encode(sanitizar(res)))
+function M.get(db, cjson, sanitizar, peticion, escape_sql)
+    local res = assert(db:query("SELECT id_producto, id_marca, id_categoria, nombre, precio_venta FROM productos ORDER BY id_producto ASC;"))
+    peticion:respond(200, cjson.encode(sanitizar(res)))
 end
 
--- 2. POST: Insertar un nuevo registro
-function M.post(db, json, sanitizar, peticion)
-    local body_data = json.decode(peticion.body)
-    if not body_data then
-        peticion:respond(400, json.encode({ error = "Cuerpo JSON inválido o vacío" }))
-        return
-    end
+function M.post(db, cjson, sanitizar, peticion, escape_sql)
+    local body = cjson.decode(peticion.body or "{}")
+    local id_marca = tonumber(body.id_marca)
+    local id_categoria = tonumber(body.id_categoria)
+    local precio_venta = tonumber(body.precio_venta)
+    if not id_marca or not id_categoria or not precio_venta then error("Parámetros numéricos inválidos") end
 
-    -- Construcción de la consulta utilizando los datos del JSON recibido
-    -- Asegúrate de sanitizar o formatear los valores según corresponda a tu esquema
-    local query = string.format(
-        "INSERT INTO productos (id_marca, id_categoria, nombre, precio_venta) VALUES (%s, %s, '%s', %s)",
-        tostring(body_data.id_marca),
-        tostring(body_data.id_categoria),
-        tostring(body_data.nombre),
-        tostring(body_data.precio_venta)
-    )
+    local nombre = escape_sql(body.nombre)
 
-    local res, err = db:query(query)
-    if not res then
-        peticion:respond(500, json.encode({ error = "Error al insertar en la base de datos", detalle = tostring(err) }))
-        return
-    end
-
-    peticion:respond(201, json.encode({ mensaje = "Registro creado exitosamente" }))
+    local sql = string.format("INSERT INTO productos (id_marca, id_categoria, nombre, precio_venta) VALUES (%d, %d, '%s', %.2f);",
+        id_marca, id_categoria, nombre, precio_venta)
+    assert(db:query(sql))
+    peticion:respond(201, cjson.encode({ status = "ok", message = "Producto creado" }))
 end
 
--- 3. PUT: Actualizar un registro existente
-function M.put(db, json, sanitizar, peticion)
-    local body_data = json.decode(peticion.body)
-    if not body_data or not body_data.id_producto then
-        peticion:respond(400, json.encode({ error = "Faltan datos o el ID para actualizar" }))
-        return
-    end
+function M.put(db, cjson, sanitizar, peticion, escape_sql)
+    local body = cjson.decode(peticion.body or "{}")
+    local id_producto = tonumber(body.id_producto)
+    local id_marca = tonumber(body.id_marca)
+    local id_categoria = tonumber(body.id_categoria)
+    local precio_venta = tonumber(body.precio_venta)
+    if not id_producto or not id_marca or not id_categoria or not precio_venta then error("Parámetros numéricos inválidos") end
 
-    local query = string.format(
-        "UPDATE productos SET nombre = '%s', precio_venta = %s WHERE id_producto = %s",
-        tostring(body_data.nombre),
-        tostring(body_data.precio_venta),
-        tostring(body_data.id_producto)
-    )
+    local nombre = escape_sql(body.nombre)
 
-    local res, err = db:query(query)
-    if not res then
-        peticion:respond(500, json.encode({ error = "Error al actualizar", detalle = tostring(err) }))
-        return
-    end
-
-    peticion:respond(200, json.encode({ mensaje = "Registro actualizado exitosamente" }))
+    local sql = string.format("UPDATE productos SET id_marca = %d, id_categoria = %d, nombre = '%s', precio_venta = %.2f WHERE id_producto = %d;",
+        id_marca, id_categoria, nombre, precio_venta, id_producto)
+    assert(db:query(sql))
+    peticion:respond(200, cjson.encode({ status = "ok", message = "Producto actualizado" }))
 end
 
--- 4. DELETE: Eliminar un registro
-function M.delete(db, json, sanitizar, peticion)
-    local body_data = json.decode(peticion.body)
-    if not body_data or not body_data.id_producto then
-        peticion:respond(400, json.encode({ error = "Se requiere el ID para eliminar" }))
-        return
-    end
+function M.delete(db, cjson, sanitizar, peticion, escape_sql)
+    local raw_id = peticion.path:match("id_producto=(%d+)")
+    local id = tonumber(raw_id)
+    if not id then error("Parámetro id_producto faltante o inválido") end
 
-    local query = string.format(
-        "DELETE FROM productos WHERE id_producto = %s",
-        tostring(body_data.id_producto)
-    )
-
-    local res, err = db:query(query)
-    if not res then
-        peticion:respond(500, json.encode({ error = "Error al eliminar el registro", detalle = tostring(err) }))
-        return
-    end
-
-    peticion:respond(200, json.encode({ mensaje = "Registro eliminado exitosamente" }))
+    assert(db:query(string.format("DELETE FROM productos WHERE id_producto = %d;", id)))
+    peticion:respond(200, cjson.encode({ status = "ok", message = "Producto eliminado" }))
 end
 
 return M

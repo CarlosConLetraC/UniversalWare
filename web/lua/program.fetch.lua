@@ -26,6 +26,11 @@ local function sanitizar(obj)
     return obj
 end
 
+local function escape_sql(str)
+    if type(str) ~= "string" then return str end
+    return str:gsub("\\", "\\\\"):gsub("'", "\\'"):gsub('"', '\\"'):gsub("%z", "\\0")
+end
+
 local controllers = {
     marcas           = require("fetch.marcas"),
     categorias       = require("fetch.categorias"),
@@ -47,17 +52,25 @@ while true do
         print("[PETICIÓN HTTP]: " .. tostring(peticion.method) .. " " .. tostring(peticion.path))
 
         local metodo = peticion.method:lower()
+        
+        -- Rutas de archivos estáticos
         if metodo == "get" and (peticion.path == "/" or peticion.path == "/index.html") then
             peticion:send_file(200, "web/public/index.html", "text/html; charset=utf-8")
+        elseif metodo == "get" and peticion.path == "/script.js" then
+            peticion:send_file(200, "web/public/script.js", "application/javascript; charset=utf-8")
+        elseif metodo == "get" and peticion.path == "/styles.css" then
+            peticion:send_file(200, "web/public/styles.css", "text/css; charset=utf-8")
         else
+            -- Enrutamiento dinámico de Endpoints de API (/api/<recurso>)
             local ruta_limpia = peticion.path:gsub("^/api", "")
-            local recurso = ruta_limpia:match("^/([^/]+)") or ""
+            local recurso = ruta_limpia:match("^/([^%?]+)") or ""
             local controller = controllers[recurso]
+
             if controller and controller[metodo] then
                 local success, err = pcall(function()
                     local db = conectar_db()
                     local ok_ejecucion, resultado_o_error = pcall(function()
-                        return controller[metodo](db, cjson, sanitizar, peticion)
+                        return controller[metodo](db, cjson, sanitizar, peticion, escape_sql)
                     end)
                     pcall(function() db:close() end)
                     if not ok_ejecucion then error(resultado_o_error) end
@@ -70,7 +83,7 @@ while true do
                     end)
                 end
             else
-                peticion:respond(404, cjson.encode({ error = "Recurso no encontrado" }))
+                peticion:respond(404, cjson.encode({ error = "Recurso o método no encontrado" }))
             end
         end
     end
