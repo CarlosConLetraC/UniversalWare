@@ -140,6 +140,67 @@
     \end{columns}
 \end{frame}
 
+
+
+
+% -----------------------------------------------------------------------------
+% SLIDE: Reglas de Negocio (Parte 1: Catálogos, Productos e Inventario)
+% -----------------------------------------------------------------------------
+\begin{frame}{Reglas de Negocio y Restricciones (1/2)}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \structure{\textbf{Marcas y Categorías}}
+            \begin{itemize}
+                \item \textbf{Unicidad:} Nombres únicos (\texttt{UNIQUE}).
+                \item \textbf{Integridad:} Bloqueo de borrado con productos activos (\texttt{ON DELETE RESTRICT}) y actualización en cascada.
+            \end{itemize}
+
+            \vspace{0.2cm}
+            \structure{\textbf{Productos y Precios}}
+            \begin{itemize}
+                \item \textbf{Asociación Obligatoria:} Requieren marca y categoría válidas (\texttt{NOT NULL}).
+                \item \textbf{Precio Válido:} Debe ser estrictamente positivo (\texttt{CHECK (precio\_venta > 0)}).
+            \end{itemize}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \structure{\textbf{Inventario y Recetas}}
+            \begin{itemize}
+                \item \textbf{Unidades Estandarizadas:} Solo admite \texttt{'kg'}, \texttt{'gr'} o \texttt{'pieza'} (\texttt{ENUM}).
+                \item \textbf{Control de Stock:} Sin valores negativos (\texttt{CHECK (stock\_actual >= 0)}) y umbral mínimo configurado.
+                \item \textbf{Composición M:N:} Clave primaria compuesta (\texttt{id\_producto}, \texttt{id\_ingrediente}) para evitar duplicados.
+                \item \textbf{Borrado en Cascada:} La eliminación de un producto remueve sus fórmulas asociadas.
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+% -----------------------------------------------------------------------------
+% SLIDE: Reglas de Negocio (Parte 2: Pedidos, Logística y Detalle)
+% -----------------------------------------------------------------------------
+\begin{frame}{Reglas de Negocio y Restricciones (2/2)}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \structure{\textbf{Gestión de Pedidos y Logística}}
+            \begin{itemize}
+                \item \textbf{Plataformas Autorizadas:} Origen limitado a UberEats, Rappi, DidiFood o WebPropia.
+                \item \textbf{Flujo de Estados:} Transición entre \texttt{Pendiente}, \texttt{En Preparacion}, \texttt{En Camino}, \texttt{Entregado} y \texttt{Cancelado}.
+                \item \textbf{Auditoría Temporal:} Inserción automática de sello de tiempo con \texttt{CURRENT\_TIMESTAMP}.
+                \item \textbf{Asociación de Entidades:} Cliente y repartidor obligatorios (\texttt{RESTRICT}).
+            \end{itemize}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \structure{\textbf{Detalle de Pedidos}}
+            \begin{itemize}
+                \item \textbf{Estructura Renglón:} Clave primaria compuesta (\texttt{id\_pedido}, \texttt{id\_producto}).
+                \item \textbf{Validación Operativa:} Cantidad mayor a cero (\texttt{cantidad > 0}) y congelamiento de precio unitario.
+                \item \textbf{Limpieza en Cascada:} Al borrar un pedido cabecera, sus renglones se eliminan automáticamente.
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
 % -----------------------------------------------------------------------------
 % SLIDE 3: Arquitectura Global (Diagrama TikZ)
 % -----------------------------------------------------------------------------
@@ -295,7 +356,7 @@ http {
             \begin{itemize}
                 \item Detecta SO (Debian/Ubuntu).
                 \item Compila LuaJIT v2.1 desde fuente.
-                \item Instala LuaRocks y dependencias como \texttt{libssh2-1-dev}.
+                \item Instala LuaRocks y dependencias como \texttt{luasocket, luasec}.
                 \item Compila dinámicamente los módulos de \texttt{clibs/}.
             \end{itemize}
         \end{column}
