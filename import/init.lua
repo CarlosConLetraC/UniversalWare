@@ -109,9 +109,9 @@ blund = function(value, msg, errorCode)
 end
 
 span = function(stop, increment, start)
-	stop = blund((type(stop) == "number" and stop) or tonumber(stop) or tonumber(stop or "", 16), string_format("invalid argument #1 for 'fori' (number expected, got %s)", type(stop)))
-	increment = blund((type(increment) == "number" and increment) or tonumber(increment) or tonumber(increment or "", 16) or (increment == nil and 1), string_format("invalid argument #2 for 'fori' (number expected, got %s)", type(increment)))
-	start = blund((type(start) == "number" and start) or tonumber(start) or tonumber(start or "", 16) or (start == nil and 1), string_format("invalid argument #3 for 'fori' (number expected, got %s)", type(start)))
+	stop = blund((type(stop) == "number" and stop) or tonumber(stop) or tonumber(stop or "", 16), string_format("invalid argument #1 for 'fori' (number expected, got %s)", typeof(stop)))
+	increment = blund((type(increment) == "number" and increment) or tonumber(increment) or tonumber(increment or "", 16) or (increment == nil and 1), string_format("invalid argument #2 for 'fori' (number expected, got %s)", typeof(increment)))
+	start = blund((type(start) == "number" and start) or tonumber(start) or tonumber(start or "", 16) or (start == nil and 1), string_format("invalid argument #3 for 'fori' (number expected, got %s)", typeof(start)))
 
 	return coroutine_wrap(function()
 		for j = start, stop, increment do

@@ -3,18 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-// #include <luajit.h>
 
 static double get_time_sec(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec + (ts.tv_nsec / 1e9);
-}
-
-static void cjob_line_hook(lua_State *L, lua_Debug *ar) {
-    (void)ar; // Forzamos un yield de 0 segundos (interrupción inmediata por quantum)
-    if (lua_isyieldable(L))
-        lua_yield(L, 0);
 }
 
 int l_cjob_new(lua_State *L) {
@@ -37,11 +30,9 @@ int l_cjob_new(lua_State *L) {
     j->co_ref = co_ref;
     j->status = JOB_RUNNING;
     j->wake_at = 0.0;
-    j->nargs = nargs; // Guardamos cuántos argumentos debe recibir en la primera ejecución
+    j->start_time = get_time_sec();
+    j->nargs = nargs;
     j->next = NULL;
-
-    // ACTIVAR HOOK: MASKCOUNT = 1 dispara el hook en CADA OpCode de Lua
-    lua_sethook(co, cjob_line_hook, LUA_MASKCOUNT, 1);
 
     enqueue_job(j);
 
@@ -68,8 +59,7 @@ int l_job_kill(lua_State *L) {
 
 int l_job_stop(lua_State *L) {
     JobHandle *h = (JobHandle *)luaL_checkudata(L, 1, CJOB_MT);
-    if (h && h->job && h->job->status == JOB_RUNNING)
-        h->job->status = JOB_SUSPENDED;
+    if (h && h->job && h->job->status == JOB_RUNNING) h->job->status = JOB_SUSPENDED;
     return 0;
 }
 
@@ -88,12 +78,23 @@ int l_job_index(lua_State *L) {
     const char *key = luaL_checkstring(L, 2);
 
     if (strcmp(key, "status") == 0) {
-        if (!h->job || h->job->status == JOB_DEAD)
+        if (!h->job) {
             lua_pushstring(L, "dead");
-        else if (h->job->status == JOB_SUSPENDED)
-            lua_pushstring(L, "suspended");
-        else
-            lua_pushstring(L, "running");
+            return 1;
+        }
+
+        switch (h->job->status) {
+            case JOB_RUNNING:
+                lua_pushstring(L, "running");
+                break;
+            case JOB_SUSPENDED:
+                lua_pushstring(L, "suspended");
+                break;
+            case JOB_DEAD:
+            default:
+                lua_pushstring(L, "dead");
+                break;
+        }
         return 1;
     }
 
@@ -106,12 +107,10 @@ int l_job_index(lua_State *L) {
 int l_job_gc(lua_State *L) {
     JobHandle *h = (JobHandle *)luaL_checkudata(L, 1, CJOB_MT);
     if (h && h->job) {
-        // Desanclar referencia del registry si el job se destruye en Lua
         if (h->job->co_ref != LUA_NOREF) {
             luaL_unref(L, LUA_REGISTRYINDEX, h->job->co_ref);
             h->job->co_ref = LUA_NOREF;
         }
-        // Desvincular puntero para evitar accesos "dangling"
         h->job->status = JOB_DEAD;
         free(h->job);
         h->job = NULL;
@@ -127,11 +126,19 @@ int l_job_tostring(lua_State *L) {
         return 1;
     }
 
-    const char *status_str = "running";
-    if (h->job->status == JOB_SUSPENDED)
-        status_str = "suspended";
-    else if (h->job->status == JOB_DEAD)
-        status_str = "dead";
+    const char *status_str;
+    switch (h->job->status) {
+        case JOB_RUNNING:
+            status_str = "running";
+            break;
+        case JOB_SUSPENDED:
+            status_str = "suspended";
+            break;
+        case JOB_DEAD:
+        default:
+            status_str = "dead";
+            break;
+    }
 
     lua_pushfstring(L, "<job[%s]: %p>", status_str, (void *)h->job);
     return 1;
