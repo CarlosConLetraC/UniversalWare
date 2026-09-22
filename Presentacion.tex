@@ -323,12 +323,11 @@ http {
     Para establecer conexión nativa mediante \texttt{cmariadb}, el usuario cliente debe ser aprovisionado con el módulo de autenticación compatible:
 
     \begin{lstlisting}[style=sqlstyle, caption={Comandos ejecutados en MariaDB CLI}]
-ALTER USER 'lua_client'@'localhost' IDENTIFIED VIA mysql_native_password USING PASSWORD('12345');
 CREATE USER IF NOT EXISTS 'lua_client'@'127.0.0.1' IDENTIFIED VIA mysql_native_password USING PASSWORD('12345');
-GRANT ALL PRIVILEGES ON *.* TO 'lua_client'@'127.0.0.1' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON *.* TO 'lua_client'@'127.0.0.1';
 FLUSH PRIVILEGES;
     \end{lstlisting}
-
+    % GRANT ALL PRIVILEGES ON *.* TO 'lua_client'@'127.0.0.1' WITH GRANT OPTION;
     \begin{itemize}
         \item \textbf{Conexión Loopback:} Se vincula a \texttt{127.0.0.1} para llamadas directas de la API C.
         \item \textbf{Método \texttt{mysql\_native\_password}:} Requisito clave para garantizar la compatibilidad binaria con la biblioteca del cliente C de MariaDB.
