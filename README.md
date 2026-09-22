@@ -59,12 +59,12 @@ subgraph group_runtime_web["Runtime y API"]
 end
 
 subgraph group_native_processing["Procesamiento nativo"]
-  node_mariadb_module["Cliente MariaDB<br/>[main.c]"]
+  node_mariadb_module["Cliente MariaDB<br/>[cmariadb/main.c]"]
   node_csv_engine["Procesador CSV<br/>[csvfast.cpp]"]
   node_stats_engine["Estadística nativa<br/>[cstats.c]"]
   node_ml_engine["Modelos ML<br/>[cml.cpp]"]
   node_json_bridge["Puente JSON<br/>[cjson.c]"]
-  node_native_jobs["Tareas nativas<br/>[cjob.c]"]
+  node_native_jobs["Tareas nativas<br/>[cjob/main.c]"]
 end
 
 subgraph group_persistence["Persistencia y datos"]
