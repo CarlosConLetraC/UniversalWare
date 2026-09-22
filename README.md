@@ -40,6 +40,7 @@ El repositorio incluye un caso de estudio enfocado en la gestión integral de un
 
 ## 🏗️ Arquitectura del Sistema
 
+```mermaid
 flowchart TD
 
 subgraph group_orchestration["Orquestación concurrente"]
@@ -126,6 +127,7 @@ class node_mariadb,node_data_files toneRose
 class node_browser toneIndigo
 
 ---
+```
 
 ## 📂 Estructura Completa del Repositorio
 
