@@ -1,6 +1,26 @@
-import("cmariadb", "chttp", "cjson")
+import("cmariadb", "chttp", "cjson", "ffi")
 
 print("[INFO] Inicializando servidor modular API UniversalWare. . .")
+ffi.cdef[[
+    struct timeval {
+        long tv_sec;
+        long tv_usec;
+    };
+    int gettimeofday(struct timeval *tv, void *tz);
+]]
+local tv = ffi.new("struct timeval")
+
+local function get_exact_timestamp()
+    local tv = ffi.new("struct timeval")
+    ffi.C.gettimeofday(tv, nil)
+    local sec = tonumber(tv.tv_sec)
+    local ms = math.floor(tonumber(tv.tv_usec) / 1000)
+    
+    local date_part = os.date("%a %b %d %H:%M:%S", sec)
+    local year_part = os.date("%Y", sec)
+    
+    return string.format("[%s:%03ds %s]", date_part, ms, year_part)
+end
 
 local function conectar_db()
     local db, err = cmariadb.connect({
@@ -49,7 +69,11 @@ print("[INFO] Servidor HTTP escuchando y listo en el puerto 8081.")
 while true do
     local peticion = chttp.accept()
     if peticion then
-        print("[PETICIÓN HTTP]: " .. tostring(peticion.method) .. " " .. tostring(peticion.path))
+        print(string.format("%s [PETICIÓN HTTP]: %s %s", 
+            get_exact_timestamp(), 
+            tostring(peticion.method), 
+            tostring(peticion.path)
+        ))
 
         local metodo = peticion.method:lower()
         
