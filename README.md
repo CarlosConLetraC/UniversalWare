@@ -40,41 +40,90 @@ El repositorio incluye un caso de estudio enfocado en la gestión integral de un
 
 ## 🏗️ Arquitectura del Sistema
 
-```mermaid
-flowchart LR
-    subgraph Orq ["1. ORQUESTACIÓN Y CLI"]
-        direction TB
-        run["run.sh"]
-        backend["backend.cpp"]
-        init["initconsole"]
-        cmd["cmd"]
-    end
+flowchart TD
 
-    subgraph Runtime ["2. RUNTIME"]
-        direction TB
-        lua["runclient / LuaJIT"]
-        main["program.main.lua"]
-        lua --> main
-    end
+subgraph group_orchestration["Orquestación concurrente"]
+  node_backend["Orquestador C++<br/>[backend.cpp]"]
+  node_scheduler["Scheduler multihilo<br/>[Scheduler.h]"]
+  node_job_queue["Cola de trabajos<br/>[Job.h]"]
+  node_worker["Worker ejecutor<br/>[Worker.h]"]
+end
 
-    subgraph Core ["3. NÚCLEO NATIVO"]
-        direction TB
-        so["import/Linux/ (*.so)<br>• cmariadb.so<br>• cjob.so / cml.so<br>• csvfast.so / stats"]
-        clibs["clibs/ & cpplibs/<br>(C/C++ Source)"]
-        libbk["libbackend/<br>(ThreadPool, Scheduler, Broker, Worker)"]
-    end
+subgraph group_runtime_web["Runtime y API"]
+  node_lua_runtime["Runtime LuaJIT"]
+  node_business_scripts["Programas Lua<br/>[program.main.lua]"]
+  node_http_api["API dark kitchen<br/>[program.fetch.lua]"]
+  node_crud_handlers["Handlers CRUD"]
+  node_http_transport["Servidor HTTP<br/>[server.c]"]
+end
 
-    subgraph Persist ["4. PERSISTENCIA"]
-        direction TB
-        db[("MariaDB / MySQL")]
-        files["data/ (*.json)"]
-    end
+subgraph group_native_processing["Procesamiento nativo"]
+  node_mariadb_module["Cliente MariaDB<br/>[main.c]"]
+  node_csv_engine["Procesador CSV<br/>[csvfast.cpp]"]
+  node_stats_engine["Estadística nativa<br/>[cstats.c]"]
+  node_ml_engine["Modelos ML<br/>[cml.cpp]"]
+  node_json_bridge["Puente JSON<br/>[cjson.c]"]
+  node_native_jobs["Tareas nativas<br/>[cjob.c]"]
+end
 
-    %% Flujo principal horizontal entre capas
-    Orq --> Runtime
-    Runtime --> Core
-    Core --> Persist
-```
+subgraph group_persistence["Persistencia y datos"]
+  node_mariadb[("MariaDB")]
+  node_data_files["Datos JSON y CSV"]
+end
+
+node_browser(("Navegador usuario"))
+
+node_browser -->|"solicita API"| node_http_api
+node_browser -->|"abre conexión"| node_http_transport
+node_http_api -->|"usa HTTP"| node_http_transport
+node_http_transport -->|"entrega solicitudes"| node_http_api
+node_http_api -->|"despacha rutas"| node_crud_handlers
+node_crud_handlers -->|"consulta datos"| node_mariadb_module
+node_mariadb_module -->|"lee y escribe"| node_mariadb
+node_http_api -->|"serializa JSON"| node_json_bridge
+node_backend -->|"inicia scheduler"| node_scheduler
+node_backend -->|"crea trabajos"| node_job_queue
+node_scheduler -->|"despacha trabajos"| node_worker
+node_worker -->|"lanza LuaJIT"| node_lua_runtime
+node_lua_runtime -->|"ejecuta programas"| node_business_scripts
+node_lua_runtime -->|"ejecuta servidor"| node_http_api
+node_business_scripts -->|"procesa CSV"| node_csv_engine
+node_csv_engine -->|"lee y escribe"| node_data_files
+node_business_scripts -->|"calcula métricas"| node_stats_engine
+node_business_scripts -->|"entrena modelos"| node_ml_engine
+node_business_scripts -->|"codifica datos"| node_json_bridge
+node_business_scripts -->|"lee configuración"| node_data_files
+node_business_scripts -.->|"programa tareas"| node_native_jobs
+
+click node_backend "https://github.com/carlosconletrac/universalware/blob/main/backend.cpp"
+click node_scheduler "https://github.com/carlosconletrac/universalware/blob/main/libbackend/Scheduler.h"
+click node_job_queue "https://github.com/carlosconletrac/universalware/blob/main/libbackend/Job.h"
+click node_worker "https://github.com/carlosconletrac/universalware/blob/main/libbackend/Worker.h"
+click node_lua_runtime "https://github.com/carlosconletrac/universalware/blob/main/runclient"
+click node_business_scripts "https://github.com/carlosconletrac/universalware/blob/main/program.main.lua"
+click node_http_api "https://github.com/carlosconletrac/universalware/blob/main/web/lua/program.fetch.lua"
+click node_crud_handlers "https://github.com/carlosconletrac/universalware/tree/main/web/lua/fetch"
+click node_http_transport "https://github.com/carlosconletrac/universalware/blob/main/clibs/chttp/server.c"
+click node_mariadb_module "https://github.com/carlosconletrac/universalware/blob/main/clibs/cmariadb/main.c"
+click node_csv_engine "https://github.com/carlosconletrac/universalware/blob/main/cpplibs/csvfast.cpp"
+click node_stats_engine "https://github.com/carlosconletrac/universalware/blob/main/clibs/cstats.c"
+click node_ml_engine "https://github.com/carlosconletrac/universalware/blob/main/cpplibs/cml.cpp"
+click node_json_bridge "https://github.com/carlosconletrac/universalware/blob/main/clibs/cjson.c"
+click node_native_jobs "https://github.com/carlosconletrac/universalware/blob/main/clibs/cjob/main.c"
+click node_data_files "https://github.com/carlosconletrac/universalware/tree/main/data"
+
+classDef toneNeutral fill:#f8fafc,stroke:#334155,stroke-width:1.5px,color:#0f172a
+classDef toneBlue fill:#dbeafe,stroke:#2563eb,stroke-width:1.5px,color:#172554
+classDef toneAmber fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#78350f
+classDef toneMint fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+classDef toneRose fill:#ffe4e6,stroke:#e11d48,stroke-width:1.5px,color:#881337
+classDef toneIndigo fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
+classDef toneTeal fill:#ccfbf1,stroke:#0f766e,stroke-width:1.5px,color:#134e4a
+class node_backend,node_scheduler,node_job_queue,node_worker toneBlue
+class node_lua_runtime,node_business_scripts,node_http_api,node_crud_handlers,node_http_transport toneAmber
+class node_mariadb_module,node_csv_engine,node_stats_engine,node_ml_engine,node_json_bridge,node_native_jobs toneMint
+class node_mariadb,node_data_files toneRose
+class node_browser toneIndigo
 
 ---
 
