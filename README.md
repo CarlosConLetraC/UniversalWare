@@ -120,13 +120,12 @@ classDef toneMint fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
 classDef toneRose fill:#ffe4e6,stroke:#e11d48,stroke-width:1.5px,color:#881337
 classDef toneIndigo fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
 classDef toneTeal fill:#ccfbf1,stroke:#0f766e,stroke-width:1.5px,color:#134e4a
+
 class node_backend,node_scheduler,node_job_queue,node_worker toneBlue
 class node_lua_runtime,node_business_scripts,node_http_api,node_crud_handlers,node_http_transport toneAmber
 class node_mariadb_module,node_csv_engine,node_stats_engine,node_ml_engine,node_json_bridge,node_native_jobs toneMint
 class node_mariadb,node_data_files toneRose
 class node_browser toneIndigo
-
----
 ```
 
 ## 📂 Estructura Completa del Repositorio
