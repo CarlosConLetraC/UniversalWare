@@ -1,4 +1,4 @@
-let recursoActual = 'marcas';
+let recursoActual = 'marcas'; // tabla seleccionada por defecto al cargar el localhost. . .
 let datosCargados = [];
 let datosFiltrados = [];
 let registroEnEdicion = null;
@@ -156,8 +156,8 @@ function seleccionarRecurso(recurso) {
     const titulo = document.getElementById('titulo-tabla');
     const subtitulo = document.getElementById('subtitulo-tabla');
     const nombreLimpio = recurso.replace('_', ' ');
-    titulo.textContent = `Vista de ${nombreLimpio.charAt(0).toUpperCase() + nombreLimpio.slice(1)}`;
-    subtitulo.textContent = `Control administrativo y auditoría de la tabla '${recurso}' en base de datos.`;
+    if (titulo) titulo.textContent = `Vista de ${nombreLimpio.charAt(0).toUpperCase() + nombreLimpio.slice(1)}`;
+    if (subtitulo) subtitulo.textContent = `Control administrativo y auditoría de la tabla '${recurso}' en base de datos.`;
 
     // Resetear búsqueda
     const searchInput = document.getElementById('input-busqueda');
@@ -171,10 +171,12 @@ async function cargarTabla(recurso) {
     const tbody = document.getElementById('tabla-body');
     const mensaje = document.getElementById('mensaje-estado');
 
-    mensaje.style.display = "flex";
-    mensaje.innerHTML = '<div class="spinner"></div><span>Consultando registros de ' + recurso + '...</span>';
-    thead.innerHTML = "";
-    tbody.innerHTML = "";
+    if (mensaje) {
+        mensaje.style.display = "flex";
+        mensaje.innerHTML = '<div class="spinner"></div><span>Consultando registros de ' + recurso + '...</span>';
+    }
+    if (thead) thead.innerHTML = "";
+    if (tbody) tbody.innerHTML = "";
 
     try {
         const response = await fetch(`/api/${recurso}`);
@@ -185,7 +187,6 @@ async function cargarTabla(recurso) {
         datosCargados = await response.json();
     } catch (error) {
         console.warn(`[API WARNING] Error al conectar con /api/${recurso}: ${error.message}`);
-        // Se pueden conservar los datos mock solo como fallback deliberado para desarrollo offline:
         datosCargados = datosMockIniciales[recurso] || [];
     }
 
@@ -200,21 +201,23 @@ function renderizarFilas(lista) {
     const conteoLabel = document.getElementById('label-conteo-registros');
     const metricTotal = document.getElementById('metric-total');
 
-    metricTotal.textContent = lista.length;
-    conteoLabel.textContent = `Mostrando ${lista.length} de ${datosCargados.length} registros`;
+    if (metricTotal) metricTotal.textContent = lista.length;
+    if (conteoLabel) conteoLabel.textContent = `Mostrando ${lista.length} de ${datosCargados.length} registros`;
 
     if (!lista || lista.length === 0) {
-        thead.innerHTML = "";
-        tbody.innerHTML = "";
-        mensaje.style.display = "flex";
-        mensaje.innerHTML = `
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.6;"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-            <span>No hay registros para mostrar en esta vista.</span>
-        `;
+        if (thead) thead.innerHTML = "";
+        if (tbody) tbody.innerHTML = "";
+        if (mensaje) {
+            mensaje.style.display = "flex";
+            mensaje.innerHTML = `
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.6;"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                <span>No hay registros para mostrar en esta vista.</span>
+            `;
+        }
         return;
     }
 
-    mensaje.style.display = "none";
+    if (mensaje) mensaje.style.display = "none";
 
     // 1. Obtener todas las columnas presentes en la respuesta
     const columnasOriginales = Object.keys(lista[0]);
@@ -223,60 +226,89 @@ function renderizarFilas(lista) {
     // 2. Extraer las claves primarias según la configuración DDL
     const pkKeys = recursoConf ? recursoConf.pk : [];
 
-    // 3. Reordenar las columnas: Colocar las PKs primero, seguidas de las demás columnas
+    // 3. Reordenar las columnas: PKs primero, seguidas del resto
     const columnas = [
         ...pkKeys.filter(k => columnasOriginales.includes(k)),
         ...columnasOriginales.filter(k => !pkKeys.includes(k))
     ];
 
     // Encabezados de tabla
-    thead.innerHTML = columnas.map(col => `<th>${col.replace('_', ' ')}</th>`).join('') 
-        + `<th class="text-right">Acciones</th>`;
+    if (thead) {
+        thead.innerHTML = columnas.map(col => `<th>${col.replace('_', ' ')}</th>`).join('') 
+            + `<th class="text-right">Acciones</th>`;
+    }
 
     // Renderizado de celdas
-    tbody.innerHTML = lista.map((row, index) => {
-        const celdas = columnas.map(col => {
-            const val = row[col];
-            if (col === 'activa') {
-                return val === 1 || val === true || val === '1'
-                    ? `<td><span class="badge-pill badge-active"><span style="width:6px; height:6px; background:#10b981; border-radius:50%;"></span> Activo</span></td>`
-                    : `<td><span class="badge-pill badge-inactive"><span style="width:6px; height:6px; background:#ef4444; border-radius:50%;"></span> Inactivo</span></td>`;
-            }
-            if (col === 'plataforma_origen') {
-                return `<td><span class="badge-pill badge-platform">${val}</span></td>`;
-            }
-            if (col === 'estado') {
-                return `<td><span class="badge-pill" style="background:rgba(255,255,255,0.08);">${val}</span></td>`;
-            }
-            if (col.includes('precio') || col === 'total') {
-                return `<td class="price-cell">$${Number(val).toFixed(2)}</td>`;
-            }
-            if (col.startsWith('id_')) {
-                return `<td class="code-cell">#${val}</td>`;
-            }
-            return `<td>${val !== null && val !== undefined ? val : '-'}</td>`;
-        }).join('');
+    if (tbody) {
+        tbody.innerHTML = lista.map((row, index) => {
+            const celdas = columnas.map(col => {
+                const val = row[col];
+                const fieldDef = recursoConf?.fields?.[col];
+                const esCampoFecha = (fieldDef && fieldDef.type === 'datetime') || 
+                                     col.toLowerCase().includes('fecha') || 
+                                     col.toLowerCase().includes('date');
 
-        return `
-            <tr>
-                ${celdas}
-                <td class="actions-cell">
-                    <button onclick="abrirModalEditar(${index})" class="btn-action btn-action-edit">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                        Editar
-                    </button>
-                    <button onclick="eliminarRegistro(${index})" class="btn-action btn-action-delete">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                        Eliminar
-                    </button>
-                </td>
-            </tr>
-        `;
-    }).join('');
+                if (col === 'activa') {
+                    return val === 1 || val === true || val === '1'
+                        ? `<td><span class="badge-pill badge-active"><span style="width:6px; height:6px; background:#10b981; border-radius:50%;"></span> Activo</span></td>`
+                        : `<td><span class="badge-pill badge-inactive"><span style="width:6px; height:6px; background:#ef4444; border-radius:50%;"></span> Inactivo</span></td>`;
+                }
+                if (col === 'plataforma_origen') {
+                    return `<td><span class="badge-pill badge-platform">${val}</span></td>`;
+                }
+                if (col === 'estado') {
+                    return `<td><span class="badge-pill" style="background:rgba(255,255,255,0.08);">${val}</span></td>`;
+                }
+                if (col.includes('precio') || col === 'total') {
+                    return `<td class="price-cell">$${Number(val || 0).toFixed(2)}</td>`;
+                }
+                if (col.startsWith('id_')) {
+                    return `<td class="code-cell">#${val}</td>`;
+                }
+                if (esCampoFecha) {
+                    if (!val) return `<td>-</td>`;
+                    const fechaIso = typeof val === 'string' ? val.replace(' ', 'T') : val;
+                    const fechaObj = new Date(fechaIso);
+
+                    if (isNaN(fechaObj.getTime())) {
+                        return `<td class="code-cell">${val}</td>`;
+                    }
+
+                    const fechaFormateada = fechaObj.toLocaleString('es-MX', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+
+                    return `<td class="code-cell">${fechaFormateada}</td>`;
+                }
+                return `<td>${val !== null && val !== undefined ? val : '-'}</td>`;
+            }).join('');
+
+            return `
+                <tr>
+                    ${celdas}
+                    <td class="actions-cell">
+                        <button onclick="abrirModalEditar(${index})" class="btn-action btn-action-edit">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            Editar
+                        </button>
+                        <button onclick="eliminarRegistro(${index})" class="btn-action btn-action-delete">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
 }
 
 function filtrarTablaEnVivo() {
-    const query = document.getElementById('input-busqueda').value.toLowerCase().trim();
+    const query = document.getElementById('input-busqueda')?.value.toLowerCase().trim() || '';
     if (!query) {
         datosFiltrados = [...datosCargados];
     } else {
@@ -349,7 +381,15 @@ function generarControlHTML(colName, colConfig, val = '') {
     }
 
     if (colConfig.type === 'datetime') {
-        const dtValue = val ? val.replace(' ', 'T') : '';
+        let dtValue = '';
+        if (val) {
+            dtValue = String(val).replace(' ', 'T').slice(0, 16);
+        } else {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            dtValue = now.toISOString().slice(0, 16);
+        }
+
         return `
             <div class="form-group">
                 <label>${label}</label>
@@ -375,6 +415,7 @@ function abrirModalCrear() {
     
     const recursoConf = esquemaDDL[recursoActual];
     const formFields = document.getElementById('form-fields');
+    if (!formFields) return;
     formFields.innerHTML = '';
 
     for (const [colName, colConfig] of Object.entries(recursoConf.fields)) {
@@ -394,6 +435,7 @@ function abrirModalEditar(index) {
     
     const recursoConf = esquemaDDL[recursoActual];
     const formFields = document.getElementById('form-fields');
+    if (!formFields) return;
     formFields.innerHTML = '';
 
     for (const [colName, colConfig] of Object.entries(recursoConf.fields)) {
@@ -420,7 +462,7 @@ async function guardarRegistro(e) {
         } else if (fieldConf && (fieldConf.type === 'decimal' || fieldConf.type === 'int')) {
             payload[key] = Number(value);
         } else if (fieldConf && fieldConf.type === 'datetime') {
-            payload[key] = value.replace('T', ' ');
+            payload[key] = value ? value.replace('T', ' ') + (value.length === 16 ? ':00' : '') : '';
         } else {
             payload[key] = value;
         }

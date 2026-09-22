@@ -45,6 +45,8 @@ local table_concat          = table.concat
 local table_sort            = table.sort
 local table_remove          = table.remove
 
+local os_time = os.time
+
 local gmt, smt = debug.getmetatable or getmetatable, debug.setmetatable or setmetatable
 
 local ReplaceKeymap = {
@@ -640,7 +642,7 @@ methods = {
 		return rawlen(self)
 	end,
 	pop = function(self, limit, ignore)
-		limit = (type(limit) == "number" and limit) or tonumber(limit) or tonumber(limit, 16) or rawlen(self)
+		limit = (type(limit) == "number" and limit) or tonumber(limit or "") or tonumber(limit or "", 16) or rawlen(self)
 		local len = rawlen(self)
 		local i = clamp(limit, 1, limit)
 		local val = rawget(self, i)

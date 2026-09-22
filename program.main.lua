@@ -1,3 +1,4 @@
+-- https://fernandoarciniega.com/sentencias-sql-ddl-dml-dcl-y-tcl/
 import("cmariadb", "system")
 
 -- 1. Conexión a MariaDB activando MULTIPLE_STATEMENTS para scripts DDL
@@ -158,7 +159,7 @@ end
 local base_ing = {"Carne", "Queso", "Tortilla", "Pollo", "Masa", "Salsa", "Verdura", "Arroz"}
 for i = 1, 8, 1 do
     local nom = string.format("%s %s", rand_elt(base_ing), rand_elt(apellidos))
-    local um = (i == 3 or i == 5) and "Pieza" or "Kg"
+    local um = (i == 3 or i == 5) and "pieza" or "kg"
     local stock_val = 20 + math.random() * (100 - 20)
     
     table.insert(ingredientes_vals, string.format("('%s', '%s', %s, 5.000)", 
