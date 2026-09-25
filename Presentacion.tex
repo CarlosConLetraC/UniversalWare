@@ -140,8 +140,78 @@
     \end{columns}
 \end{frame}
 
+% -----------------------------------------------------------------------------
+% SLIDE: Problemática de Dark Kitchen y Solución con UniversalWare
+% -----------------------------------------------------------------------------
+\begin{frame}{Problemática en Dark Kitchens y la Solución UniversalWare}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \structure{\textbf{¿Qué es una Dark Kitchen y por qué necesita una BD?}}
+            \begin{itemize}
+                \item \textbf{Sin Comedor Físico:} Modelo enfocado $100\%$ en delivery multi-plataforma (UberEats, Rappi, DidiFood).
+                \item \textbf{Alta Volatilidad e Inventario:} Requiere sincronización en tiempo real de insumos, recetas compuestas y estados de pedidos.
+                \item \textbf{Múltiples Marcas:} Una misma cocina opera varias marcas virtuales; centralizar la información previene discrepancias de stock.
+            \end{itemize}
+        \end{column}
 
+        \begin{column}{0.48\textwidth}
+            \structure{\textbf{¿Por qué UniversalWare vs. Stack SQL Convencional?}}
+            \begin{itemize}
+                \item \textbf{Complejidad de ORMs Tradicionales:} Las infraestructuras pesadas (Spring, Django, etc.) consumen excesivos recursos en hardware limitado.
+                \item \textbf{API SQL Ligera y Portable:} UniversalWare provee integración directa vía \texttt{cmariadb} en C y LuaJIT, eliminando capas intermedias de abstracción.
+                \item \textbf{Baja Latencia en Picos de Demanda:} Mantiene un espacio de memoria mínimo y alta velocidad I/O ideal para operaciones pequeñas o medianas.
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
 
+% -----------------------------------------------------------------------------
+% SLIDE: Comparativa de Eficiencia: Java (JVM) vs. UniversalWare (C + LuaJIT)
+% -----------------------------------------------------------------------------
+\begin{frame}{Eficiencia en Hardware Limitado: C + LuaJIT vs. Java}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \structure{\textbf{El Problema de Java en Hardware Limitado}}
+            \begin{itemize}
+                \item \textbf{Carga Inicial (JVM Warm-up):} Requiere inicializar la máquina virtual en memoria antes de ejecutar lógica, consumiendo recursos críticos.
+                \item \textbf{Picos por Garbage Collector:} La recolección de basura genera picos de CPU del $100\%$ en procesadores de gama baja.
+                \item \textbf{Overhead por Conexión:} Las bibliotecas tradicionales (JDBC) y contenedores demandan un margen de RAM elevado.
+            \end{itemize}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \structure{\textbf{Ventaja Operativa de UniversalWare}}
+            \begin{itemize}
+                \item \textbf{Consumo Mínimo de Memoria:} El runtime de LuaJIT junto a extensiones en C opera en un rango de \textbf{1 a 5 MB} de RAM.
+                \item \textbf{Control Directo de Memoria:} Uso de buffers en C para red y persistencia sin pausas no deterministas.
+                \item \textbf{Despliegue Ligero:} No requiere dependencias pesadas; ideal para computadoras de bajo costo o servidores pequeños.
+            \end{itemize}
+        \end{column}
+    \end{columns}
+
+    \vspace{0.3cm}
+\end{frame}
+
+\newpage
+
+% -----------------------------------------------------------------------------
+% SLIDE: Tabla Comparativa Detallada de Recursos
+% -----------------------------------------------------------------------------
+\begin{frame}{Tabla Comparativa Detallada: Java vs. UniversalWare}
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{llll}
+        \toprule
+        \textbf{Métrica de Recurso} & \textbf{Java + Conector JDBC} & \textbf{UniversalWare} & \textbf{Ventaja de UniversalWare} \\
+        \midrule
+        \textbf{Peso del Driver en Disco} & $\sim 6\text{ MB} - 10\text{ MB}$ (.jar) & $\mathbf{\sim 50\text{ KB} - 150\text{ KB}}$ (.so/.dll) & Reducción drástica de almacenamiento local. \\
+        \textbf{Runtime Base en Disco} & $\sim 150\text{ MB} - 300\text{ MB}$ (JRE) & $\mathbf{\sim 2.5\text{ MB}}$ (LuaJIT + C) & Cabe entero en cualquier memoria Flash vieja o SD. \\
+        \textbf{Consumo RAM en Reposo} & $\sim 80\text{ MB} - 250\text{ MB}$ & $\mathbf{\sim 3\text{ MB} - 8\text{ MB}}$ & Ideal para PCs con 2GB RAM de punto de venta. \\
+        \textbf{RAM por Conexión Activa} & $\sim 1\text{ MB} - 3\text{ MB}$ & $\mathbf{\sim \text{Kilobytes}}$ (Estructura nativa) & El script de API abre y cierra, liberando todo. \\
+        \bottomrule
+    \end{tabular}
+    }
+\end{frame}
 
 % -----------------------------------------------------------------------------
 % SLIDE: Reglas de Negocio (Parte 1: Catálogos, Productos e Inventario)
@@ -362,7 +432,7 @@ http {
         \end{column}
         \begin{column}{0.33\textwidth}
             \structure{\textbf{2. \texttt{build.sh}}}
-            \begin{itemize}
+            \begin{itemize} 
                 \item Verifica si la CLI de \texttt{luajit} está presente.
                 \item Compila el orquestador principal \texttt{backend.cpp} con C++17 y optimizaciones \texttt{-O3}.
             \end{itemize}
@@ -400,9 +470,9 @@ FLUSH PRIVILEGES;
 % -----------------------------------------------------------------------------
 \begin{frame}[fragile]{Runtime Web: Enrutamiento y Sanitización}
 \begin{columns}[T]
-\begin{column}{0.52\textwidth}
+\begin{column}{0.55\textwidth}
 \begin{lstlisting}[style=luastyle, caption={Ciclo principal en program.fetch.lua}]
-import("cmariadb", "chttp", "cjson")
+import("cmariadb", "chttp", "cjson", "cjob")
 
 local controllers = {
     categorias = require("fetch.categorias"),
@@ -411,22 +481,26 @@ local controllers = {
 
 chttp.listen("127.0.0.1", 8081)
 
-while true do
-    local peticion = chttp.accept()
-    if peticion then
-        local metodo = peticion.method:lower()
-        local recurso = peticion.path:match("^/api/([^%?]+)")
-        local controller = controllers[recurso]
-
-        if controller and controller[metodo] then
-            pcall(function()
-                local db = conectar_db()
-                controller[metodo](db, cjson, sanitizar, peticion, escape_sql)
-                db:close()
-            end)
+cjob.new(function()
+    while true do
+        local peticion = chttp.accept()
+        if peticion then
+            local metodo = peticion.method:lower()
+            local recurso = peticion.path:match("^/api/([^%?]+)")
+            local controller = controllers[recurso]
+    
+            if controller and controller[metodo] then
+                pcall(function()
+                    local db = conectar_db()
+                    controller[metodo](db, cjson, sanitizar, peticion, escape_sql)
+                    db:close()
+                end)
+            end
         end
     end
-end
+end)
+
+cjob.async()
 \end{lstlisting}
 \end{column}
 \begin{column}{0.45\textwidth}

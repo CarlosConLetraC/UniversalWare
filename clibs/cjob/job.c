@@ -7,7 +7,7 @@
 static double get_time_sec(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec + (ts.tv_nsec / 1e9);
+    return (double)ts.tv_sec + ((double)ts.tv_nsec / 1e9);
 }
 
 int l_cjob_new(lua_State *L) {

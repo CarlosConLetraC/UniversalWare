@@ -22,7 +22,7 @@
 El sistema está diseñado bajo el principio de **separación de responsabilidades**:
 - **C++17 (`backend.cpp` + `libbackend/`)**: Orquestador principal multihilo que gestiona el pool de trabajadores (`Worker.h`), la cola de trabajos (`Job.h`, `Scheduler.h`) y la distribución (`Broker.h`).
 - **Librerías Nativas y Dinámicas (`clibs/`, `cpplibs/`, `import/Linux/`)**: Módulos optimizados para MariaDB (`cmariadb.so`), multitarea/planificación (`cjob.so`), utilidades estadísticas (`cstats.so`), procesamiento CSV acelerado (`csvfast.so`), Machine Learning (`cml.so`) y utilidades SSH (`ssh.so`).
-- **Módulos y Utilidades Lua (`import/`)**: Proporcionan abstracciones matemáticas/vectoriales (`Vector2`, `Vector3`, `Color3`), estructuras de datos (`Lista`, `Nodo`), compatibilidad con formatos (`json`, `csv`, `base64`), enums visuales/animación (`EasingModes`) y primitivas de tareas (`task.lua`).
+- **Módulos y Utilidades Lua (`import/`)**: Proporcionan abstracciones matemáticas/vectoriales (`Vector2`, `Vector3`, `Color3`, `Math`), compatibilidad con formatos (`json/cjson`, `csv/csvfast`, `base64`), enums visuales/animación (`EasingModes`).
 - **LuaJIT (`program.main.lua`)**: Punto de entrada de alto nivel para ejecutar reglas de negocio e iteraciones dinámicas sin recompensar el núcleo.
 - **Shell Automation (`run.sh`, `pods.sh`, `cmd`, `build.sh`)**: Automatización completa para CI/CD local, entorno interactivo REPL, compilación y despliegue.
 
@@ -33,7 +33,7 @@ El sistema está diseñado bajo el principio de **separación de responsabilidad
 El repositorio incluye un caso de estudio enfocado en la gestión integral de una **Dark Kitchen** (cocina fantasma de alto volumen):
 * **Ingesta de Pedidos en Tiempo Real:** Persistencia continua y lectura transaccional en MariaDB a través del módulo nativo `cmariadb.so`.
 * **Carga Masiva de Menús e Inventarios:** Procesamiento e ingesta ultrarrápida de archivos CSV de insumos mediante `csvfast.so` y `csv.lua`.
-* **Analítica y Proyecciones de Demanda:** Modelado estocástico de pedidos e inventarios críticos combinando el rendimiento de `cstats.so` y `cml.so`.
+* **Analítica y Proyecciones de Demanda:** De ser necesario, se puede incluir operaciones de modelado estocástico de pedidos e inventarios críticos combinando el rendimiento de `cstats.so` y `cml.so` para análisis de datos.
 * **Orquestación Concurrente:** Procesamiento de comandas y ejecución de tareas pesadas en segundo plano mediante `cjob.so` y el motor multihilo de `libbackend/`.
 
 ---

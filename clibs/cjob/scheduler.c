@@ -40,6 +40,7 @@ Job* dequeue_job(void) {
 }
 
 static void step_job(lua_State *L, Job *j) {
+    if (!j) return;
     int nargs_to_pass = 0;
     double now = get_time_sec();
 
@@ -48,7 +49,8 @@ static void step_job(lua_State *L, Job *j) {
         j->nargs = -1;
     } else {
         double actual_elapsed = now - j->start_time;
-        if (actual_elapsed < 0.0001) actual_elapsed = 0.0001;
+        // if (actual_elapsed < 0.0001)
+        actual_elapsed = actual_elapsed < 0.0001 ? 0.0001 : actual_elapsed;
 
         lua_settop(j->co, 0);
         lua_pushnumber(j->co, actual_elapsed);
@@ -56,7 +58,6 @@ static void step_job(lua_State *L, Job *j) {
     }
 
     int status = lua_resume(j->co, nargs_to_pass);
-
     if (status == LUA_YIELD) {
         int top = lua_gettop(j->co);
         
@@ -98,16 +99,15 @@ void process_jobs(lua_State *L) {
     // Procesar únicamente los jobs que ya deben despertarse en el instante actual
     while (job_head) {
         double now = get_time_sec();
-
-        // Si el job al frente aún NO vence (está en el futuro), salimos inmediatamente
-        // para devolver el control al bucle de dibujado de la ventana.
-        if (job_head->status == JOB_RUNNING && job_head->wake_at > 0.0 && now < job_head->wake_at) {
-            break;
-        }
-
+        /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
+         * Si el job al frente aún NO vence (está en el futuro), salimos inmediatamente  *
+         * para devolver el control al bucle de dibujado de la ventana.                  *
+        \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+        if (job_head->status == JOB_RUNNING && job_head->wake_at > 0.0 && now < job_head->wake_at) break;
         if (job_head->status == JOB_RUNNING) {
-            Job *curr = dequeue_job();
-            step_job(L, curr);
+            // Job *curr = dequeue_job();
+            // step_job(L, curr);
+            step_job(L, dequeue_job());
         } else {
             // Limpieza de jobs no ejecutables
             dequeue_job();
@@ -124,8 +124,9 @@ void process_jobs_flush(lua_State *L) {
             nanosleep(&req, NULL);
         }
         if (job_head->status == JOB_RUNNING) {
-            Job *curr = dequeue_job();
-            step_job(L, curr);
+            // Job *curr = dequeue_job();
+            // step_job(L, curr);
+            step_job(L, dequeue_job());
         } else {
             dequeue_job();
         }
@@ -156,8 +157,9 @@ int l_cjob_async(lua_State *L) {
         }
 
         if (job_head->status == JOB_RUNNING) {
-            Job *curr = dequeue_job();
-            step_job(L, curr);
+            // Job *curr = dequeue_job();
+            // step_job(L, curr);
+            step_job(L, dequeue_job());
         } else {
             dequeue_job();
         }
