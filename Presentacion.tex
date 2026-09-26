@@ -470,13 +470,14 @@ FLUSH PRIVILEGES;
 % -----------------------------------------------------------------------------
 \begin{frame}[fragile]{Runtime Web: Enrutamiento y Sanitización}
 \begin{columns}[T]
-\begin{column}{0.55\textwidth}
+\begin{column}{0.60\textwidth}
 \begin{lstlisting}[style=luastyle, caption={Ciclo principal en program.fetch.lua}]
 import("cmariadb", "chttp", "cjson", "cjob")
 
 local controllers = {
     categorias = require("fetch.categorias"),
     pedidos    = require("fetch.pedidos")
+    -- resto de controladores por cada tabla. . .
 }
 
 chttp.listen("127.0.0.1", 8081)
@@ -488,12 +489,13 @@ cjob.new(function()
             local metodo = peticion.method:lower()
             local recurso = peticion.path:match("^/api/([^%?]+)")
             local controller = controllers[recurso]
-    
             if controller and controller[metodo] then
-                pcall(function()
-                    local db = conectar_db()
-                    controller[metodo](db, cjson, sanitizar, peticion, escape_sql)
-                    db:close()
+                local success, err = pcall(function()
+                    local db = obtener_conexion_db()
+                    pcall(
+                        controller[metodo], db, cjson,
+                        sanitizar, peticion, escape_sql
+                    )
                 end)
             end
         end
