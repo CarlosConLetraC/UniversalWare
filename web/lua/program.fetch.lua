@@ -39,7 +39,7 @@ local function obtener_conexion_db()
             error("Error al crear conexión persistente: " .. tostring(db_or_err))
         end
     else
-        -- 2. Si ya existe, ejecutamos una consulta ligera ("ping") para verificar si sigue viva
+        -- Si ya existe, ejecutamos una consulta ligera ("ping") para verificar si sigue viva. . .
         local vivo, _ = pcall(function() return db_global:query("SELECT 1;") end)
         if not vivo then
             print("[DATABASE] Conexión caída o inactiva (Timeout). Intentando reconexión...")
