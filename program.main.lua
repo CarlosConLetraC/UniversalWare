@@ -147,7 +147,6 @@ for i = 1, 10, 1 do
     local precio_val = precio_min + math.random() * (precio_max - precio_min)
     local v_precio = SqlValue.decimal(precio_val)
     
-    -- Uso del nuevo método :tonumber() en lugar de acceder a campos internos
     local cat_index = c_id:tonumber() or 1
     local nom = string.format("%s %s %d", categorias_cat[cat_index], rand_elt(nombres_prod), i)
     local v_nom = SqlValue.string(nom)
