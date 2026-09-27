@@ -190,7 +190,6 @@ for i = 1, 32, 1 do
 
     local nom_rep = string.format("%s %s %s", rand_elt(nombres_personas), rand_elt(apellidos), rand_elt(apellidos))
     
-    -- Añadidas comillas simples para nombre, teléfono y vehículo (quitando las comillas del arreglo original de vehiculos si las tenía)
     table.insert(repartidores_vals, string.format("('%s', '%s', '%s')", 
         tostring(SqlValue.string(nom_rep)),
         tostring(SqlValue.string(string.format("555%07d", math.random(0, 9999999)))),
@@ -214,7 +213,6 @@ for i = 1, 15, 1 do
     local f_hora_str = string.format("2026-08-%02d %02d:%02d:00", rand_num(1, 24), rand_num(10, 22), rand_num(0, 59))
     local v_datetime = SqlValue.datetime(f_hora_str)
     
-    -- Nota: aseguramos comillas para plataforma y estado (si en tu arreglo ya tenían comillas, puedes ajustar o dejarlas limpias aquí)
     table.insert(
         pedidos_vals,
         string.format("(%s, %s, '%s', '%s', '%s', %s)",
