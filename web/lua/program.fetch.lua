@@ -29,6 +29,7 @@ local firmas_db = {
     password = "12345",
     db = "dark_kitchen_db"
 }
+
 local function obtener_conexion_db()
     if not db_global then
         local ok, db_or_err = pcall(cmariadb.connect, firmas_db)
@@ -43,7 +44,7 @@ local function obtener_conexion_db()
         local vivo, _ = pcall(function() return db_global:query("SELECT 1;") end)
         if not vivo then
             print("[DATABASE] Conexión caída o inactiva (Timeout). Intentando reconexión...")
-            -- Limpieza preventiva del objeto antiguo para llamar a su destructor (__gc)
+            -- Limpieza preventiva del objeto antiguo para llamar a su destructor (__gc). . .
             pcall(function() db_global:close() end)
             db_global = nil
             
@@ -92,6 +93,15 @@ local controllers = {
 chttp.listen("127.0.0.1", 8081)
 print("[INFO] Servidor HTTP escuchando y listo en el puerto 8081.")
 
+local NOMBRE_DE_TABLAS_DB = {}
+do
+    local db = obtener_conexion_db()
+    local resultado = assert(db:query("SHOW TABLES;"))
+    for _, v in pairs(resultado) do
+        table.insert(NOMBRE_DE_TABLAS_DB, v.Tables_in_dark_kitchen_db:value())
+    end
+end
+
 cjob.new(function()
     while true do
         local peticion = chttp.accept()
@@ -119,25 +129,65 @@ cjob.new(function()
 
                 if controller and controller[metodo] then
                     local success, err = pcall(function()
-                        -- Obtenemos la conexión persistente (reutiliza o reconecta automáticamente). . .
                         local db = obtener_conexion_db()
-                        
-                        -- Ejecución segura de la lógica CRUD en tu controlador externo. . .
-                        local ok_ejecucion, resultado_o_error = pcall(function()
-                            return controller[metodo](db, cjson, sanitizar, peticion, escape_sql)
-                        end)
-                        
-                        if not ok_ejecucion then error(resultado_o_error) end
+                        return controller[metodo](db, cjson, sanitizar, peticion, escape_sql)
                     end)
 
+                    -- Manejo centralizado e Inteligente de Errores HTTP. . .
                     if not success then
-                        print("[ERROR 500]: " .. tostring(err))
+                        local err_str = tostring(err)
+                        local status_code = 500
+                        local tipo_error = "Error interno del servidor"
+
+                        -- Detección automática y refinada de dependencias en llaves foráneas. . .
+                        if err_str:find("1451") or err_str:find("foreign key constraint fails") then
+                            status_code = 409
+                            tipo_error = "Conflicto de integridad referencial"
+                            
+                            -- MariaDB siempre coloca la tabla hija bloqueadora justo después de la base de datos: `db`.`tabla_hija`. . .
+                            local tabla_bloqueo = err_str:match("`[^`]+`%.`(%w+)`")
+                            
+                            -- Extraer la columna de la llave foránea involucrada. . .
+                            local columna_fk = err_str:match("FOREIGN KEY%s*%(`([^`]+)`%)")
+
+                            -- Respaldo por si el formato varía: buscar con :find en la lista de tablas del sistema. . .
+                            if not tabla_bloqueo then
+                                local err_lower = err_str:lower()
+                                for _, s in pairs(NOMBRE_DE_TABLAS_DB) do
+                                    if err_lower:find("`"..s.."`", 1, true) then
+                                        tabla_bloqueo = s
+                                        break
+                                    end
+                                end
+                            end
+
+                            if tabla_bloqueo and columna_fk then
+                                err_str = string.format("No se puede eliminar el registro porque la columna '%s' tiene dependencias activas en la tabla '%s'.", columna_fk, tabla_bloqueo)
+                            elseif tabla_bloqueo then
+                                err_str = string.format("No se puede eliminar el registro debido a dependencias activas en la tabla '%s'.", tabla_bloqueo)
+                            else
+                                err_str = "No se puede eliminar el registro porque viola restricciones de clave foránea en el sistema."
+                            end
+                        elseif err_str:find("inválido") or err_str:find("faltante") or err_str:lower():find("parámetro") then
+                            status_code = 400
+                            tipo_error = "Solicitud incorrecta"
+                        end
+
+                        print(string.format("%s [ERROR %d]: %s %s", 
+                            get_exact_timestamp(),
+                            status_code,
+                            tipo_error,
+                            err_str
+                        ))
                         pcall(function()
-                            peticion:respond(500, cjson.encode({ error = "Error interno", detalle = tostring(err) }))
+                            peticion:respond(status_code, cjson.encode({ 
+                                error = tipo_error, 
+                                detalle = err_str 
+                            }))
                         end)
                     end
                 else
-                    peticion:respond(404, cjson.encode({ error = "Recurso o método no encontrado" }))
+                    peticion:respond(404, cjson.encode({ error = "Recurso or método no encontrado" }))
                 end
             end
         end

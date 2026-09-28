@@ -504,17 +504,21 @@ async function eliminarRegistro(index) {
     const params = new URLSearchParams();
     recursoConf.pk.forEach(pkKey => params.append(pkKey, reg[pkKey]));
 
-    if (!confirm(`¿Estás seguro de que deseas eliminar este registro (${recursoConf.pk.map(k=>reg[k]).join(', ')})?`)) return;
+    if (!confirm(`¿Estás seguro de que deseas eliminar este registro (${recursoConf.pk.map(k => reg[k]).join(', ')})?`)) return;
 
     try {
         const response = await fetch(`/api/${recursoActual}?${params.toString()}`, {
             method: 'DELETE'
         });
-        if (!response.ok) throw new Error("Error al eliminar");
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.detalle || errData.error || "No se pudo completar la operación de borrado.");
+        }
+
         cargarTabla(recursoActual);
     } catch (error) {
-        datosCargados = datosCargados.filter(item => item !== reg);
-        filtrarTablaEnVivo();
+        alert(`Aviso del Sistema (Dark Kitchen):\n\n${error.message}`);
     }
 }
 
