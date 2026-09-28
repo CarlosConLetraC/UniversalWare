@@ -156,9 +156,14 @@ end
 
 -- C. Ingredientes
 local base_ing = {"Carne", "Queso", "Tortilla", "Pollo", "Masa", "Salsa", "Verdura", "Arroz"}
-for i = 1, 8, 1 do
-    local nom = string.format("%s %s", rand_elt(base_ing), rand_elt(apellidos))
-    local um = (i == 3 or i == 5) and "pieza" or "kg"
+local unidades_pieza = {}
+unidades_pieza[base_ing[3]] = true
+unidades_pieza[base_ing[4]] = true
+
+for _ = 1, #base_ing, 1 do
+    local ingrediente = rand_elt(base_ing)
+    local nom = string.format("%s %s", ingrediente, rand_elt(apellidos))
+    local um = unidades_pieza[ingrediente] and "pieza" or "kg"
     local stock_val = 20 + math.random() * (100 - 20)
     
     table.insert(ingredientes_vals, string.format("('%s', '%s', %s, 5.000)", 
@@ -219,7 +224,7 @@ for i = 1, 15, 1 do
             tostring(cli_id), tostring(rep_id), rand_elt(plataformas), tostring(v_datetime), rand_elt(estados), tostring(v_total)
         )
     )
-        
+    
     table.insert(detalle_vals, string.format("(%s, %s, %s, %s)", 
         tostring(SqlValue.integer(i)), tostring(prod_id), tostring(cant), tostring(v_p_unit)
     ))
@@ -288,7 +293,7 @@ db:close()
 --[[
 ALTER USER 'lua_client'@'localhost' IDENTIFIED VIA mysql_native_password USING PASSWORD('12345');
 CREATE USER IF NOT EXISTS 'lua_client'@'127.0.0.1' IDENTIFIED VIA mysql_native_password USING PASSWORD('12345');
-GRANT ALL PRIVILEGES ON *.* TO 'lua_client'@'127.0.0.1' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON *.* TO 'lua_client'@'127.0.0.1';
 FLUSH PRIVILEGES;
 EXIT;
 ]]
