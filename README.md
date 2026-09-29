@@ -24,7 +24,7 @@ El sistema está diseñado bajo el principio de **separación de responsabilidad
 - **Librerías Nativas y Dinámicas (`clibs/`, `cpplibs/`, `import/Linux/`)**: Módulos optimizados para MariaDB (`cmariadb.so`), multitarea/planificación (`cjob.so`), utilidades estadísticas (`cstats.so`), procesamiento CSV acelerado (`csvfast.so`), Machine Learning (`cml.so`) y utilidades SSH (`ssh.so`).
 - **Módulos y Utilidades Lua (`import/`)**: Proporcionan abstracciones matemáticas/vectoriales (`Vector2`, `Vector3`, `Color3`, `Math`), compatibilidad con formatos (`json/cjson`, `csv/csvfast`, `base64`), enums visuales/animación (`EasingModes`).
 - **LuaJIT (`program.main.lua`)**: Punto de entrada de alto nivel para ejecutar reglas de negocio e iteraciones dinámicas sin recompensar el núcleo.
-- **Shell Automation (`run.sh`, `pods.sh`, `cmd`, `build.sh`)**: Automatización completa para CI/CD local, entorno interactivo REPL, compilación y despliegue.
+- **Shell Automation (`run.sh`, `pods.sh`, `cmd`, `initconsole`, `build.sh`)**: Automatización completa para CI/CD local, entorno interactivo REPL, compilación y despliegue.
 
 ---
 
