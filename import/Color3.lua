@@ -16,6 +16,7 @@ local append = loadfile("import/sublibs/Color3.lua")(Color3, ...)
 
 local Math_clamp = Math.clamp
 local Math_round = Math.round
+local Math_floor = Math.floor
 local Math_lerp = Math.lerp
 local Math_abs = Math.abs
 
@@ -35,6 +36,14 @@ function methods.toHEX(self)
 	local B = Math_round(self.B*255)
 
 	return string_format("%.2X%.2X%.2X", R, G, B)--:format(R, G, B)
+end
+
+function methods.transformAsHEX(self) -- 0 <-> 16777215
+    local xR = Math_floor(self.R * 255 + 0.5)
+    local xG = Math_floor(self.G * 255 + 0.5)
+    local xB = Math_floor(self.B * 255 + 0.5)
+    
+    return (xR << 16) | (xG << 8) | xB
 end
 
 function Color3.fromHEX(hex)
