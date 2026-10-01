@@ -2,7 +2,6 @@ import("cjob", "Enum", "Math", "system")
 import_as("cColor3", "Color3")
 import_as("cEasingModes", "EasingModes")
 
-
 local ffi = require("ffi")
 ffi.cdef[[
     typedef struct _XDisplay Display;
