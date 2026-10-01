@@ -10,7 +10,6 @@ static double get_time_sec(void) {
     return (double)ts.tv_sec + ((double)ts.tv_nsec / 1e9);
 }
 
-// Inserción ordenada O(N) por wake_at para mantener la cabeza siempre con el job más próximo
 void enqueue_job(Job *j) {
     if (!j) return;
     j->next = NULL;
@@ -40,7 +39,7 @@ Job* dequeue_job(void) {
 }
 
 static void step_job(lua_State *L, Job *j) {
-    if (!j) return;
+    if (!j || j->status != JOB_RUNNING || !j->co) return;
     int nargs_to_pass = 0;
     double now = get_time_sec();
 
@@ -49,10 +48,8 @@ static void step_job(lua_State *L, Job *j) {
         j->nargs = -1;
     } else {
         double actual_elapsed = now - j->start_time;
-        // if (actual_elapsed < 0.0001)
         actual_elapsed = actual_elapsed < 0.0001 ? 0.0001 : actual_elapsed;
 
-        lua_settop(j->co, 0);
         lua_pushnumber(j->co, actual_elapsed);
         nargs_to_pass = 1;
     }
@@ -72,45 +69,36 @@ static void step_job(lua_State *L, Job *j) {
 
         enqueue_job(j);
     } else {
-        if (status != LUA_OK) {
-            const char *err = lua_tostring(j->co, -1);
-            char err_buf[512];
-            snprintf(err_buf, sizeof(err_buf), "[CJob Error]: %s", err ? err : "desconocido");
-
-            j->status = JOB_DEAD;
-            if (j->co_ref != LUA_NOREF) {
-                luaL_unref(j->co, LUA_REGISTRYINDEX, j->co_ref);
-                j->co_ref = LUA_NOREF;
-            }
-
-            luaL_error(L, "%s", err_buf);
-            return;
-        }
+        const char *err = (status != LUA_OK) ? lua_tostring(j->co, -1) : NULL;
 
         j->status = JOB_DEAD;
         if (j->co_ref != LUA_NOREF) {
-            luaL_unref(j->co, LUA_REGISTRYINDEX, j->co_ref);
+            luaL_unref(L, LUA_REGISTRYINDEX, j->co_ref);
             j->co_ref = LUA_NOREF;
+        }
+        j->co = NULL;
+
+        // FIX: Liberar la memoria del job de forma segura. . .
+        free(j);
+
+        if (status != LUA_OK) {
+            char err_buf[1024];
+            snprintf(err_buf, sizeof(err_buf), "[CJob Error]: %s", err ? err : "desconocido");
+            luaL_error(L, "%s", err_buf);
+            return;
         }
     }
 }
 
 void process_jobs(lua_State *L) {
-    // Procesar únicamente los jobs que ya deben despertarse en el instante actual
     while (job_head) {
         double now = get_time_sec();
-        /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
-         * Si el job al frente aún NO vence (está en el futuro), salimos inmediatamente  *
-         * para devolver el control al bucle de dibujado de la ventana.                  *
-        \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
         if (job_head->status == JOB_RUNNING && job_head->wake_at > 0.0 && now < job_head->wake_at) break;
         if (job_head->status == JOB_RUNNING) {
-            // Job *curr = dequeue_job();
-            // step_job(L, curr);
             step_job(L, dequeue_job());
         } else {
-            // Limpieza de jobs no ejecutables
-            dequeue_job();
+            Job *dead_j = dequeue_job();
+            free(dead_j);
         }
     }
 }
@@ -124,8 +112,6 @@ void process_jobs_flush(lua_State *L) {
             nanosleep(&req, NULL);
         }
         if (job_head->status == JOB_RUNNING) {
-            // Job *curr = dequeue_job();
-            // step_job(L, curr);
             step_job(L, dequeue_job());
         } else {
             dequeue_job();
@@ -157,8 +143,6 @@ int l_cjob_async(lua_State *L) {
         }
 
         if (job_head->status == JOB_RUNNING) {
-            // Job *curr = dequeue_job();
-            // step_job(L, curr);
             step_job(L, dequeue_job());
         } else {
             dequeue_job();
