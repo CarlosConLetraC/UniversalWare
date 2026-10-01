@@ -2,6 +2,7 @@ import("cjob", "Enum", "Math", "system")
 import_as("cColor3", "Color3")
 import_as("cEasingModes", "EasingModes")
 
+
 local ffi = require("ffi")
 ffi.cdef[[
     typedef struct _XDisplay Display;
@@ -43,10 +44,10 @@ local root = x11.XDefaultRootWindow(dpy)
 local depth = x11.XDefaultDepth(dpy, screen)
 
 local COLOR_BLACK = 0x000000
-local color3_cuadrado1 = Color3.fromHEX("FF3344"):transformAsHEX() -- 0xFF3344
-local color3_cuadrado2 = Color3.fromHEX("00E5FF"):transformAsHEX() -- 0x00E5FF
+local color3_cuadrado1 = Color3.fromRGB(255, 51, 68):transformAsHEX() -- 0xFF3344
+local color3_cuadrado2 = Color3.fromRGB(0, 229, 255):transformAsHEX() -- 0x00E5FF
 
-local width, height = 800, 600
+local width, height = 1200, 800
 local win = x11.XCreateSimpleWindow(dpy, root, 10, 10, width, height, 1, COLOR_BLACK, COLOR_BLACK)
 
 x11.XMapWindow(dpy, win)
@@ -98,7 +99,7 @@ cjob.new(function()
             
             -- Color dinámico basado en el avance del easing (Cicatrizando tonos HSV de 0 a 360)
             local hue = (eased_alpha * 360 + (f1.index * 45)) % 360
-            color3_cuadrado1 = Color3.fromHSV(hue, 1.0, 1.0):transformAsHEX()
+            color3_cuadrado1 = Color3.hsvToHEX(hue, 1.0, 1.0)
         end
 
         -- Fijar valor destino exacto y sincronizar frame
@@ -129,7 +130,7 @@ cjob.new(function()
             
             -- Color dinámico desfasado respecto al cuadrado 1
             local hue = ((1.0 - eased_alpha) * 360 + (f2.index * 45)) % 360
-            color3_cuadrado2 = Color3.fromHSV(hue, 1.0, 1.0):transformAsHEX()
+            color3_cuadrado2 = Color3.hsvToHEX(hue, 1.0, 1.0)
         end
 
         -- Fijar valor destino exacto y sincronizar frame

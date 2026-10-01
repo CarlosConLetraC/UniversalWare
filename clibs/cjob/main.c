@@ -3,6 +3,11 @@
 Job *job_head = NULL;
 Job *job_tail = NULL;
 
+static int l_job_type(lua_State *L) {
+    lua_pushstring(L, "cjob");
+    return 1;
+}
+
 static const struct luaL_Reg job_methods[] = {
     {"kill",       l_job_kill},
     {"stop",       l_job_stop},
@@ -10,6 +15,7 @@ static const struct luaL_Reg job_methods[] = {
     {"__index",    l_job_index},
     {"__tostring", l_job_tostring},
     {"__gc",       l_job_gc},
+    {"__type",     l_job_type},
     {NULL, NULL}
 };
 

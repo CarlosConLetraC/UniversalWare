@@ -9,23 +9,25 @@ int color3_to_hex(lua_State *L);
 int color3_transform_as_hex(lua_State *L);
 int color3_lerp(lua_State *L);
 int color3_interpolate(lua_State *L);
+int color3_hsv_to_hex(lua_State *L);
 int color3_tostring(lua_State *L);
 int color3_eq(lua_State *L);
 
 static const struct luaL_Reg color3_methods[] = {
-    {"unpack", color3_unpack},
-    {"toHEX", color3_to_hex},
+    {"unpack",         color3_unpack},
+    {"toHEX",          color3_to_hex},
     {"transformAsHEX", color3_transform_as_hex},
-    {"lerp", color3_lerp},
-    {"interpolate", color3_interpolate},
+    {"lerp",           color3_lerp},
+    {"interpolate",    color3_interpolate},
     {NULL, NULL}
 };
 
 static const struct luaL_Reg color3_functions[] = {
-    {"new", color3_new},
-    {"fromRGB", color3_from_rgb},
-    {"fromHSV", color3_from_hsv},
-    {"fromHEX", color3_from_hex},
+    {"new",      color3_new},
+    {"fromRGB",  color3_from_rgb},
+    {"fromHSV",  color3_from_hsv},
+    {"fromHEX",  color3_from_hex},
+    {"hsvToHEX", color3_hsv_to_hex},
     {NULL, NULL}
 };
 

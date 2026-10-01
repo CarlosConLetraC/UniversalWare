@@ -178,6 +178,44 @@ int color3_interpolate(lua_State *L) {
     return 1;
 }
 
+int color3_hsv_to_hex(lua_State *L) {
+    float h = (float)luaL_optnumber(L, 1, 0.0);
+    float s = (float)luaL_optnumber(L, 2, 1.0);
+    float v = (float)luaL_optnumber(L, 3, 1.0);
+
+    h = fmodf(h, 360.0f);
+    if (h < 0) h += 360.0f;
+    s = clamp_f(s, 0.0f, 1.0f);
+    v = clamp_f(v, 0.0f, 1.0f);
+
+    float r = 0, g = 0, b = 0;
+    if (s == 0.0f) {
+        r = g = b = v;
+    } else {
+        float hh = h / 60.0f;
+        int i = (int)floorf(hh);
+        float ff = hh - i;
+        float p = v * (1.0f - s);
+        float q = v * (1.0f - (s * ff));
+        float t = v * (1.0f - (s * (1.0f - ff)));
+
+        switch (i) {
+            case 0: r = v; g = t; b = p; break;
+            case 1: r = q; g = v; b = p; break;
+            case 2: r = p; g = v; b = t; break;
+            case 3: r = p; g = q; b = v; break;
+            case 4: r = t; g = p; b = v; break;
+            default: r = v; g = p; b = q; break;
+        }
+    }
+    int ir = (int)floorf(r * 255.0f + 0.5f);
+    int ig = (int)floorf(g * 255.0f + 0.5f);
+    int ib = (int)floorf(b * 255.0f + 0.5f);
+    
+    lua_pushinteger(L, (ir << 16) | (ig << 8) | ib);
+    return 1;
+}
+
 int color3_tostring(lua_State *L) {
     Color3Data *c = check_color3(L, 1);
     char buf[64];
