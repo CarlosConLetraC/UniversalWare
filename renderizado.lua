@@ -1,6 +1,8 @@
-local ffi = require("ffi")
-import("cjob", "Enum", "EasingModes", "Math")
+import("cjob", "Enum", "Math", "system")
+import_as("cColor3", "Color3")
+import_as("cEasingModes", "EasingModes")
 
+local ffi = require("ffi")
 ffi.cdef[[
     typedef struct _XDisplay Display;
     typedef unsigned long Window;
@@ -41,8 +43,8 @@ local root = x11.XDefaultRootWindow(dpy)
 local depth = x11.XDefaultDepth(dpy, screen)
 
 local COLOR_BLACK = 0x000000
-local COLOR_RED   = 0xFF3344
-local COLOR_CYAN  = 0x00E5FF
+local color3_cuadrado1 = Color3.fromHEX("FF3344"):transformAsHEX() -- 0xFF3344
+local color3_cuadrado2 = Color3.fromHEX("00E5FF"):transformAsHEX() -- 0x00E5FF
 
 local width, height = 800, 600
 local win = x11.XCreateSimpleWindow(dpy, root, 10, 10, width, height, 1, COLOR_BLACK, COLOR_BLACK)
@@ -77,7 +79,7 @@ end
 local f1 = nextEasingMode(1)
 local f2 = nextEasingMode(2)
 
--- 1. Job Lógica: Cuadrado Rojo (Bounce Out)
+-- 1. Job Lógica: Cuadrado 1 (Modifica su posición y su color cíclico usando el Easing actual)
 cjob.new(function()
     local start_x, target_x = 0, width - square1.size
     local duration = 1.0
@@ -89,19 +91,26 @@ cjob.new(function()
             local dt = cjob.wait(0)
             elapsed = elapsed + dt/1000
             local alpha = math.min(elapsed / duration, 1.0)
-            square1.x = start_x + (target_x - start_x) * f1.value(alpha)
+            
+            -- Posición con easing
+            local eased_alpha = f1.value(alpha)
+            square1.x = start_x + (target_x - start_x) * eased_alpha
+            
+            -- Color dinámico basado en el avance del easing (Cicatrizando tonos HSV de 0 a 360)
+            local hue = (eased_alpha * 360 + (f1.index * 45)) % 360
+            color3_cuadrado1 = Color3.fromHSV(hue, 1.0, 1.0):transformAsHEX()
         end
 
         -- Fijar valor destino exacto y sincronizar frame
         square1.x = target_x
 
-        -- Invertir dirección
+        -- Invertir dirección y avanzar de easing
         start_x, target_x = target_x, start_x
         f1 = nextEasingMode(f1.index+1)
     end
 end)
 
--- 2. Job Lógica: Cuadrado Cian (Cubic InOut)
+-- 2. Job Lógica: Cuadrado 2 (Modifica su posición y su color cíclico usando el Easing actual)
 cjob.new(function()
     local start_x, target_x = 0, width - square2.size
     local duration = 1.0
@@ -113,13 +122,20 @@ cjob.new(function()
             local dt = cjob.wait(0)
             elapsed = elapsed + dt/1000
             local alpha = math.min(elapsed / duration, 1.0)
-            square2.x = start_x + (target_x - start_x) * f2.value(alpha)
+            
+            -- Posición con easing
+            local eased_alpha = f2.value(alpha)
+            square2.x = start_x + (target_x - start_x) * eased_alpha
+            
+            -- Color dinámico desfasado respecto al cuadrado 1
+            local hue = ((1.0 - eased_alpha) * 360 + (f2.index * 45)) % 360
+            color3_cuadrado2 = Color3.fromHSV(hue, 1.0, 1.0):transformAsHEX()
         end
 
         -- Fijar valor destino exacto y sincronizar frame
         square2.x = target_x
 
-        -- Invertir dirección
+        -- Invertir dirección y avanzar de easing
         start_x, target_x = target_x, start_x
         f2 = nextEasingMode(f2.index+1)
     end
@@ -133,11 +149,11 @@ cjob.new(function()
         x11.XFillRectangle(dpy, buffer, gc, 0, 0, width, height)
 
         -- Draw Cuadrado 1 (Rojo)
-        x11.XSetForeground(dpy, gc, COLOR_RED)
+        x11.XSetForeground(dpy, gc, color3_cuadrado1)
         x11.XFillRectangle(dpy, buffer, gc, math.floor(square1.x), math.floor(square1.y), square1.size, square1.size)
 
         -- Draw Cuadrado 2 (Cian)
-        x11.XSetForeground(dpy, gc, COLOR_CYAN)
+        x11.XSetForeground(dpy, gc, color3_cuadrado2)
         x11.XFillRectangle(dpy, buffer, gc, math.floor(square2.x), math.floor(square2.y), square2.size, square2.size)
 
         -- Present
