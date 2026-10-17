@@ -1,5 +1,0 @@
-return {
-	"In",
-	"InOut",
-	"Out"
-}
