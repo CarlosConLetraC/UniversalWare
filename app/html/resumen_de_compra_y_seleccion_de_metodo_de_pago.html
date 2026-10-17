@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resumen de Compra y Pago</title>
+</head>
+<body>
+    <h1>Resumen de Compra</h1>
+    
+    <!-- Sección de Resumen de Artículos y Costos -->
+    <section>
+        <h2>Artículos en tu Carrito</h2>
+        <ul>
+            <li>Producto A - Cantidad: 1 - Price: $500.00</li>
+            <li>Producto B - Cantidad: 2 - Price: $250.00</li>
+        </ul>
+        
+        <h3>Totales</h3>
+        <p><strong>Subtotal:</strong> $1000.00</p>
+        <p><strong>Impuestos (16%):</strong> $160.00</p>
+        <p><strong>Total a Pagar:</strong> $1160.00</p>
+    </section>
+
+    <hr>
+
+    <!-- Selección de Método de Pago -->
+    <section>
+        <h2>Selecciona un Método de Pago</h2>
+        
+        <!-- Opción 1: Tarjeta de Crédito/Débito -->
+        <form action="/pago/tarjeta" method="GET">
+            <p>
+                <img src="icons/card.png" alt="[Ícono Tarjeta]">
+                <button type="submit">Pagar con Tarjeta de Crédito o Débito</button>
+            </p>
+        </form>
+
+        <!-- Opción 2: PayPal -->
+        <form action="/pago/paypal" method="POST">
+            <p>
+                <img src="icons/paypal.png" alt="[Ícono PayPal]">
+                <button type="submit">Pagar con PayPal</button>
+            </p>
+        </form>
+
+        <!-- Opción 3: Pago Móvil -->
+        <form action="/pago/mobile" method="POST">
+            <p>
+                <img src="icons/mobile.png" alt="[Ícono Google Pay / Apple Pay]">
+                <button type="submit">Pagar con Google Pay / Apple Pay</button>
+            </p>
+        </form>
+    </section>
+</body>
+</html>

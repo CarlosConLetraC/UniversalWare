@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Autenticación de PayPal</title>
+</head>
+<body>
+    <h1>Redirigiendo a PayPal...</h1>
+    <p>Por favor autoriza el pago en la ventana de PayPal.</p>
+    
+    <!-- Simulación de respuesta de autorización -->
+    <form action="/pago/confirmar-paypal" method="POST">
+        <button type="submit">Simular Pago Autorizado en PayPal</button>
+    </form>
+
+    <!-- Simulación de cancelación -->
+    <form action="/resumen" method="GET">
+        <button type="submit">Cancelar y Regresar al Carrito Intacto</button>
+    </form>
+</body>
+</html>
