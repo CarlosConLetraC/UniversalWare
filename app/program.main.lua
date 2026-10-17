@@ -34,7 +34,6 @@ while not raylib.window_should_close() do
     raylib.clear_background(theme.bg)
     
     -- 1. Dibujar Barra Lateral (Sidebar)
-    -- (Nota: Puedes implementar rectángulos sólidos en tu raylib_draw si lo requieres)
     
     -- 2. Dibujar Header / Barra Superior
     raylib.draw_text("UniversalWare Desktop Engine", 20, 20, 22, theme.accent)
