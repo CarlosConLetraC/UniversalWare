@@ -26,17 +26,17 @@
 
         <p>
             <label for="card_number">Número de Tarjeta:</label><br>
-            <input type="text" id="card_number" name="card_number" required pattern="\\d{16}" maxlength="16" placeholder="1234567890123456">
+            <input type="text" id="card_number" name="card_number" required pattern="[0-9]{16}" maxlength="16" placeholder="1234567890123456">
         </p>
 
         <p>
             <label for="exp_date">Fecha de Vencimiento (MM/AA):</label><br>
-            <input type="text" id="exp_date" name="exp_date" required pattern="(0[1-12]|1[0-2])\\/\\d{2}" placeholder="MM/AA">
+            <input type="text" id="exp_date" name="exp_date" required pattern="(0[1-9]|1[0-2])/[0-9]{4}" placeholder="MM/AAAA">
         </p>
 
         <p>
             <label for="cvv">Código de Seguridad (CVV):</label><br>
-            <input type="password" id="cvv" name="cvv" required pattern="\\d{3,4}" maxlength="4" placeholder="123">
+            <input type="password" id="cvv" name="cvv" required pattern="[0-9]{3}" maxlength="3" placeholder="123">
         </p>
 
         <p>
