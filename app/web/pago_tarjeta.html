@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pago con Tarjeta</title>
+</head>
+<body>
+    <h1>Ingresa los datos de tu tarjeta</h1>
+
+    <!-- Mensaje de error de validación (Condicional desde LuaJIT) -->
+    <div role="alert">
+        <p><strong>Error de Validación:</strong> El número de tarjeta o el CVV introducido no tienen un formato válido. Por favor, corrígelos antes de continuar.</p>
+    </div>
+
+    <!-- Simulación de procesamiento de tarjeta (Aprobado vs Rechazado) -->
+    <p>Selecciona una acción de prueba para la pasarela:</p>
+    <ul>
+        <li><a href="comprobante_pago_aprobado.html">Simular Pago con Tarjeta Aprobado</a></li>
+        <li><a href="notificacion_pago_rechazado.html">Simular Pago con Tarjeta Rechazado</a></li>
+    </ul>
+
+    <form action="comprobante_pago_aprobado.html" method="GET">
+        <p>
+            <label for="card_holder">Nombre del Titular:</label><br>
+            <input type="text" id="card_holder" name="card_holder" required pattern="[A-Za-z\\s]+" title="Ingresa el nombre como aparece en la tarjeta">
+        </p>
+
+        <p>
+            <label for="card_number">Número de Tarjeta:</label><br>
+            <input type="text" id="card_number" name="card_number" required pattern="\\d{16}" maxlength="16" placeholder="1234567890123456">
+        </p>
+
+        <p>
+            <label for="exp_date">Fecha de Vencimiento (MM/AA):</label><br>
+            <input type="text" id="exp_date" name="exp_date" required pattern="(0[1-12]|1[0-2])\\/\\d{2}" placeholder="MM/AA">
+        </p>
+
+        <p>
+            <label for="cvv">Código de Seguridad (CVV):</label><br>
+            <input type="password" id="cvv" name="cvv" required pattern="\\d{3,4}" maxlength="4" placeholder="123">
+        </p>
+
+        <p>
+            <button type="submit">Confirmar y Pagar $1160.00</button>
+            <a href="resumen_de_compra_y_seleccion_de_metodo_de_pago.html">Cancelar y Volver al Resumen</a>
+        </p>
+    </form>
+</body>
+</html>
